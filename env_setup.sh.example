@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+echo "BB Helper Env Setup"
+
+export BB_USER=
+export BB_PASSWORD=
+export BB_WORKSPACE=
+export BB_RIPPER_EXPORT_DIRECTORY=
