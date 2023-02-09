@@ -9,7 +9,7 @@ This application works with [Bitbucket App Passwords](https://support.atlassian.
 
 ## Environment Settings
 
-The ripper the following environment variables to operate.
+The ripper requires the following environment variables to run.
 
 `BB_USER` The username component of the Bitbucket App Password.
 
