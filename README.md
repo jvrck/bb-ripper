@@ -46,8 +46,17 @@ cd bb-ripper
 python3 .
 ```
 
-### Running in docker
-To build the docker file
+### Running the docker image
+To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
+
+```
+docker pull jvrck/bbripper
+docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  ripper:latest
+```
+
+
+### Building and running the docker image
+To build the docker image
 ```
 docker build --no-cache -t ripper .
 ```
