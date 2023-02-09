@@ -51,7 +51,7 @@ To run the image, create a docker environment file with the variables required n
 
 ```
 docker pull jvrck/bbripper
-docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  ripper:latest
+docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  jvrck/bbripper:latest
 ```
 
 
