@@ -19,6 +19,8 @@ The ripper requires the following environment variables to run.
 
 `BB_RIPPER_EXPORT_DIRECTORY` The path of the output.
 
+You can use the optional environment variable `BB_TEST_COUNTER` to only pull down a specified number of repositories. This is useful for testing purposes. All values that are non integer and lower that 1 will be ignored.
+
 ## Running the ripper
 
 ### Local Environment
@@ -46,8 +48,17 @@ cd bb-ripper
 python3 .
 ```
 
-### Running in docker
-To build the docker file
+### Running the docker image
+To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
+
+```
+docker pull jvrck/bbripper
+docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  jvrck/bbripper:latest
+```
+
+
+### Building and running the docker image
+To build the docker image
 ```
 docker build --no-cache -t ripper .
 ```
@@ -56,4 +67,11 @@ To run the image, create a docker environment file with the variables required n
 
 ```
  docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  ripper:latest
+```
+
+## Docker image with AWS CLI.
+There is a variant of the image that has the AWS CLI preinstalled. This is done during the build by passing a build argument to the Docker command.
+
+```
+docker build --no-cache -t bbripper-aws --build-arg AWSCLI=TRUE .
 ```
