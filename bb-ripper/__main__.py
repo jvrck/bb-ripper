@@ -15,6 +15,8 @@ if check_git() is not None:
     workspace_repos = bbhelper.BBRepo.GetWorkspaceRepos(os.environ['BB_WORKSPACE'])
 
     counter = 0
+    test_counter = os.environ.get('BB_TEST_COUNTER')
+
     for repo in workspace_repos:
         print('================')
         print(repo.https)
@@ -23,8 +25,14 @@ if check_git() is not None:
         clone_repo(repo, output_dir)
 
         counter += 1
-        # if counter > 0:
-        #     break
+        
+        # test that test_counter is present
+        if test_counter is not None:
+            # test test_counter is a valid integer
+            if test_counter.isdigit():
+                # test for valid test_counter > 0 and counter is equal to test_counter 
+                if (int(test_counter) == counter) and (int(test_counter) > 0):
+                    break
 
     zip_output_dir()
 
