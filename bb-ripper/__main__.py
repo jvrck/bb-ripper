@@ -35,6 +35,7 @@ if check_git() is not None:
                     break
 
     zip_output_dir()
+    delete_output_directory()
 
 else:
     print('git is not installed...Exiting')
