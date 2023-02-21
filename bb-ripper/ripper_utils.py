@@ -3,6 +3,7 @@ import os
 import subprocess
 from datetime import datetime
 from shutil import which
+import shutil
 
 output_dir = ""
 output_base = ""
@@ -16,7 +17,7 @@ def create_output_directory():
         output_base = os.getcwd()
     
     global output_dir
-    output_dir = '{0}bbr-{1}'.format(output_base, datetime.today().strftime('%Y-%m-%d'))
+    output_dir = '{0}bbr-{1}-{2}'.format(output_base, os.environ['BB_WORKSPACE'], datetime.today().strftime('%Y-%m-%d'))
     print("the output dir === {0}".format(output_dir))
     isExists = os.path.exists(output_dir)
     
@@ -24,6 +25,11 @@ def create_output_directory():
         os.makedirs(output_dir)
 
     return output_dir
+
+# Delete output directory
+def delete_output_directory():
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
 
 # Checks if git is installed
 def check_git():
