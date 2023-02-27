@@ -20,7 +20,7 @@ rfc3986==2.0.0
 rich==12.5.1
 six==1.16.0
 tomli==2.0.1
-twine==4.0.1
+twine==4.0.2
 typing_extensions==4.5.0
 urllib3==1.26.14
 webencodings==0.5.1
