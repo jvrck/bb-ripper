@@ -2,7 +2,7 @@ bbhelper==0.0.1
 bleach==5.0.1
 build==0.8.0
 certifi==2022.12.7
-charset-normalizer==2.1.0
+charset-normalizer==3.0.1
 commonmark==0.9.1
 docutils==0.19
 idna==3.3
