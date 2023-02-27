@@ -2,12 +2,12 @@ bbhelper==0.0.1
 bleach==5.0.1
 build==0.8.0
 certifi==2022.12.7
-charset-normalizer==2.1.0
+charset-normalizer==3.0.1
 commonmark==0.9.1
 docutils==0.19
-idna==3.3
+idna==3.4
 importlib-metadata==4.12.0
-keyring==23.8.2
+keyring==23.13.1
 packaging==23.0
 pep517==0.13.0
 pkginfo==1.8.3
@@ -20,8 +20,8 @@ rfc3986==2.0.0
 rich==12.5.1
 six==1.16.0
 tomli==2.0.1
-twine==4.0.1
+twine==4.0.2
 typing_extensions==4.5.0
 urllib3==1.26.14
 webencodings==0.5.1
-zipp==3.8.1
+zipp==3.15.0
