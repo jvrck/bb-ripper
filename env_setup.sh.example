@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "BB Helper Env Setup"
+echo "BB Ripper Env Setup"
 
 export BB_USER=
 export BB_PASSWORD=

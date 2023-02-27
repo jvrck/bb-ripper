@@ -17,7 +17,7 @@ def create_output_directory():
         output_base = os.getcwd()
     
     global output_dir
-    output_dir = '{0}bbr-{1}-{2}'.format(output_base, os.environ['BB_WORKSPACE'], datetime.today().strftime('%Y-%m-%d'))
+    output_dir = '{0}bbr-{1}-{2}'.format(output_base, os.environ['BB_WORKSPACE'], datetime.today().strftime('%Y-%m-%d-T%H.%M.%S'))
     print("the output dir === {0}".format(output_dir))
     isExists = os.path.exists(output_dir)
     
