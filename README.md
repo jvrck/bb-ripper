@@ -25,7 +25,7 @@ You can use the optional environment variable `BB_TEST_COUNTER` to only pull dow
 
 ### Local Environment
 
-This has been developed and tested on `Python 3.8.16` and MacOS
+This has been developed and tested on `Python 3.11.2` and MacOS
 
 To install python dependencies 
 ```
