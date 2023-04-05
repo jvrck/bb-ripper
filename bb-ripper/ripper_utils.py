@@ -15,6 +15,10 @@ def create_output_directory():
         output_base = os.environ['BB_RIPPER_EXPORT_DIRECTORY']
     else:
         output_base = os.getcwd()
+
+    # Append backslash to output base it it is not present.
+    if not output_base.endswith('/'):
+        output_base += '/'
     
     global output_dir
     output_dir = '{0}bbr-{1}-{2}'.format(output_base, os.environ['BB_WORKSPACE'], datetime.today().strftime('%Y-%m-%d-T%H.%M.%S'))
