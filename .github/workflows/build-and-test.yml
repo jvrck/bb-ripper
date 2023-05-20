@@ -1,0 +1,28 @@
+name: Build and Test Workflow
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+    
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python3 ./bb-ripper/.
+        env:
+          BB_USER : ${{ secrets.BB_USER }}
+          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
+          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
+          BB_RIPPER_EXPORT_DIRECTORY: ${{ secrets.BB_RIPPER_EXPORT_DIRECTORY }}
+  
