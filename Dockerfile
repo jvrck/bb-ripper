@@ -11,7 +11,7 @@ RUN chmod +x setup.sh
 RUN /ripper/setup.sh
 RUN rm /ripper/setup.sh
 RUN apt-get update && apt-get upgrade -y && apt-get install -y git
-RUN  pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 VOLUME /data
 

@@ -1,8 +1,8 @@
-from bbhelper import bbhelper
 import sys,os
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/bb-ripper'
 sys.path.insert(0, BASE)
 from ripper_utils import *
+from bbhelper import *
 import time
 
 start_time = time.time()
@@ -12,7 +12,7 @@ if check_git() is not None:
     print(output_dir)
 
     # # Get all repos in workspace
-    workspace_repos = bbhelper.BBRepo.GetWorkspaceRepos(os.environ['BB_WORKSPACE'])
+    workspace_repos = BBRepo.GetWorkspaceRepos(os.environ['BB_WORKSPACE'])
 
     counter = 0
     test_counter = os.environ.get('BB_TEST_COUNTER')
