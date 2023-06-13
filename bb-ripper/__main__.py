@@ -1,3 +1,6 @@
+"""
+The main entrypoint for the application.
+"""
 import time
 import sys
 import os
