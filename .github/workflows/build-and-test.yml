@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
+      - run: pip install pylint && pylint ./bb-ripper/
       - run: python3 ./bb-ripper/.
         env:
           BB_USER : ${{ secrets.BB_USER }}

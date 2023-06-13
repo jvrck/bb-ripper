@@ -132,3 +132,4 @@ localdev
 env_setup.sh
 dockenv
 .DS_Store
+.vscode
