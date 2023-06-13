@@ -1,12 +1,14 @@
-import requests
+"""Module that provides bitbucket REST API helper functions"""
 import os
 import json
 import logging
+import requests
 
-BB_API_ENDPOINT='https://api.bitbucket.org/2.0'
+BB_API_ENDPOINT = 'https://api.bitbucket.org/2.0'
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
+
 
 class BBProject:
     """
@@ -14,6 +16,7 @@ class BBProject:
     Contains the structure of a bitbucket project
     Takes json response object in constructor
     """
+
     def __init__(self, json):
         self.name = json['name']
         self.key = json['key']
@@ -24,7 +27,7 @@ class BBProject:
         """
         Static method to get all projects for a workspace
         """
-        request_endpoint = "{0}/workspaces/{1}/projects".format(BB_API_ENDPOINT, workspace_name)
+        request_endpoint = f"{BB_API_ENDPOINT}/workspaces/{workspace_name}/projects"
         logging.info("Get projects request endpoint %s", request_endpoint)
 
         session = requests.session()
@@ -33,7 +36,7 @@ class BBProject:
         projects_request = session.get(request_endpoint)
         projects_json = json.loads(projects_request.text)
         projects = []
-        
+
         for p in projects_json['values']:
             projects.append(BBProject(p))
 
@@ -47,6 +50,7 @@ class BBRepo:
     Contains the structure of a bitbucket repo
     Takes json response object in constructor
     """
+
     def __init__(self, data):
         self.name = data['name']
         self.project = data['project']
@@ -60,15 +64,19 @@ class BBRepo:
 
     @staticmethod
     def GetWorkspaceRepos(workspace_name):
-        request_endpoint = "{0}/repositories/{1}".format(BB_API_ENDPOINT, workspace_name)
-        logging.info("Get workspace repos request endpoint %s", request_endpoint)
+        """
+        A function that returns repos for a workspace
+        """
+        request_endpoint = f"{BB_API_ENDPOINT}/repositories/{workspace_name}"
+        logging.info("Get workspace repos request endpoint %s",
+                     request_endpoint)
 
         session = requests.session()
         session.auth = (os.environ['BB_USER'], os.environ['BB_PASSWORD'])
 
         repos = []
-    
-        process = True        
+
+        process = True
         while process:
             repos_request = session.get(request_endpoint)
             repos_json = json.loads(repos_request.text)
@@ -81,6 +89,6 @@ class BBRepo:
                 request_endpoint = repos_json['next']
             else:
                 process = False
-                
+
         session.close()
         return repos
