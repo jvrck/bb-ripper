@@ -1,5 +1,4 @@
-# bb-ripper
-# Bitbucket Repo Ripper
+# bb-ripper - Bitbucket Repo Ripper
 
 This project downloads all Bitbucket repositories and every branch for each repository. The resulting downloads are compressed with `tar`.
 
@@ -27,51 +26,58 @@ You can use the optional environment variable `BB_TEST_COUNTER` to only pull dow
 
 This has been developed and tested on `Python 3.11.2` and MacOS
 
-To install python dependencies 
-```
+To install python dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Set the environment variables 
+### Set the environment variables
+
 Open `env_setup.sh.example` and add the values for your environment. Rename the file to `env_setup.sh` Source the environment variables to add the to you session.
-```
+
+```bash
 source env_setup.sh
 ```
 
-
 ### Run
 
-
 To run the ripper
-```
+
+```bash
 cd bb-ripper
 python3 .
 ```
 
 ### Running the docker image
+
 To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
 
-```
+The repository contains a file named `docenv.example` that is a template for the `docenv` file.
+
+```bash
 docker pull jvrck/bbripper
 docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  jvrck/bbripper:latest
 ```
 
-
 ### Building and running the docker image
+
 To build the docker image
-```
+
+```bash
 docker build --no-cache -t ripper .
 ```
 
 To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
 
-```
+```bash
  docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  ripper:latest
 ```
 
-## Docker image with AWS CLI.
-There is a variant of the image that has the AWS CLI preinstalled. This is done during the build by passing a build argument to the Docker command.
+## Docker image with AWS CLI
 
-```
+There is a variant of the image that has the AWS CLI preinstalled. This is done during the build by passing a build argument to the Docker `build` command.
+
+```bash
 docker build --no-cache -t bbripper-aws --build-arg AWSCLI=TRUE .
 ```
