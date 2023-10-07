@@ -8,7 +8,7 @@ This application works with [Bitbucket App Passwords](https://support.atlassian.
 
 ## Environment Settings
 
-The ripper requires the following environment variables to run.
+The application requires the following environment variables to run.
 
 `BB_USER` The username component of the Bitbucket App Password.
 
@@ -18,15 +18,15 @@ The ripper requires the following environment variables to run.
 
 `BB_RIPPER_EXPORT_DIRECTORY` The path of the output.
 
-You can use the optional environment variable `BB_TEST_COUNTER` to only pull down a specified number of repositories. This is useful for testing purposes. All values that are non integer and lower that 1 will be ignored.
+With the optional environment variable `BB_TEST_COUNTER` you can pull down only a specified number of repositories. This is useful for testing purposes. All values that are non integer and lower that 1 will be ignored.
 
 ## Running the ripper
 
 ### Local Environment
 
-This has been developed and tested on `Python 3.11.2` and MacOS
+The application was developed and tested on MacOS with the [Python 3.11 package](https://formulae.brew.sh/formula/python@3.11) managed with [Homebrew](https://brew.sh/).
 
-To install python dependencies
+To install Python dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ### Set the environment variables
 
-Open `env_setup.sh.example` and add the values for your environment. Rename the file to `env_setup.sh` Source the environment variables to add the to you session.
+To set the environment variables: Rename `env_setup.sh.example` to `env_setup.sh` after adding values for your environment, then source the environment variables to add them to your session.
 
 ```bash
 source env_setup.sh
@@ -42,7 +42,7 @@ source env_setup.sh
 
 ### Run
 
-To run the ripper
+To run the application
 
 ```bash
 cd bb-ripper
@@ -51,7 +51,7 @@ python3 .
 
 ### Running the docker image
 
-To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
+To run the docker image: Create a Docker environment file with the variables required, named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
 
 The repository contains a file named `docenv.example` that is a template for the `docenv` file.
 
@@ -76,7 +76,7 @@ To run the image, create a docker environment file with the variables required n
 
 ## Docker image with AWS CLI
 
-There is a variant of the image that has the AWS CLI preinstalled. This is done during the build by passing a build argument to the Docker `build` command.
+A variant of the image that has the AWS CLI preinstalled. This can be done during the build by passing a build argument to the Docker `build` command.
 
 ```bash
 docker build --no-cache -t bbripper-aws --build-arg AWSCLI=TRUE .
