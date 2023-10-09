@@ -35,6 +35,36 @@ jobs:
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
 
+  build-and-run-aws-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        
+      - name: Build and Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          file: ./Dockerfile
+          build-args: AWSCLI=TRUE
+          push: false
+          tags: |
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
+
+      - name: Run Docker image
+        run: |
+          docker run \
+            -e BB_USER=$BB_USER \
+            -e BB_WORKSPACE=$BB_WORKSPACE \
+            -e BB_PASSWORD=$BB_PASSWORD \
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
+        env:
+          BB_USER: ${{ secrets.BB_USER }}
+          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
+          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
+
+
       # - name: Build and push Docker with AWS
       #   uses: docker/build-push-action@v5
       #   with:
