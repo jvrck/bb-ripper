@@ -14,7 +14,7 @@ jobs:
         run: echo ${{ github.run_id }}
 
       - name: Echo base ref
-        run: echo ${{ github.ref }}
+        run: echo ${{ github.repository.ref }}
 
       - name: Dump GitHub context
         env:
