@@ -10,11 +10,11 @@ jobs:
   build-and-push-images:
     runs-on: ubuntu-latest
     steps:
-      - name: Echo run number
-        run: echo ${{ github.run_number }}
+      - name: Echo run id
+        run: echo ${{ github.run_id }}
 
       - name: Echo base ref
-        run: echo ${{ github.base_ref }}
+        run: echo ${{ github.ref }}
 
       - name: Dump GitHub context
         env:
