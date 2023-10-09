@@ -37,7 +37,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/jvrck/bbripper:${{ github.run_id }}
-          run: env
+          run: echo $BB_USER "  oahs"
         env:
           BB_USER : ${{ secrets.BB_USER }}
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
