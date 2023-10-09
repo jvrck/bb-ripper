@@ -10,18 +10,8 @@ jobs:
   build-and-run-images:
     runs-on: ubuntu-latest
     steps:
-      - name: Echo run id
-        run: echo ${{ github.run_id }}
-
       - name: Check out repo
         uses: actions/checkout@v4
-
-      # - name: Login to Github Packages
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
         
       - name: Build and Docker image
         uses: docker/build-push-action@v5
@@ -34,9 +24,14 @@ jobs:
             ghcr.io/jvrck/bbripper:${{ github.run_id }}
 
       - name: Run Docker image
-        run: docker run -e BB_USER=$BB_USER -e BB_WORKSPACE=$BB_WORKSPACE -e BB_PASSWORD=$BB_PASSWORD ghcr.io/jvrck/bbripper:${{ github.run_id }}
+        run: |
+          docker run \
+            -e BB_USER=$BB_USER \
+            -e BB_WORKSPACE=$BB_WORKSPACE \
+            -e BB_PASSWORD=$BB_PASSWORD \
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}
         env:
-          BB_USER : ${{ secrets.BB_USER }}
+          BB_USER: ${{ secrets.BB_USER }}
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
 
