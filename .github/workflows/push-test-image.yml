@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  build-and-push-images:
+  build-and-run-images:
     runs-on: ubuntu-latest
     steps:
       - name: Echo run id
@@ -23,7 +23,7 @@ jobs:
       #     username: ${{ github.actor }}
       #     password: ${{ secrets.GITHUB_TOKEN }}
         
-      - name: Build and push Docker image
+      - name: Build and Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -32,6 +32,15 @@ jobs:
           push: false
           tags: |
             ghcr.io/jvrck/bbripper:${{ github.run_id }}
+
+      - name: Run Docker image
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ghcr.io/jvrck/bbripper:${{ github.run_id }}
+        env:
+          BB_USER : ${{ secrets.BB_USER }}
+          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
+          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
 
       # - name: Build and push Docker with AWS
       #   uses: docker/build-push-action@v5
