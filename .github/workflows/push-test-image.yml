@@ -37,11 +37,12 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/jvrck/bbripper:${{ github.run_id }}
-          run: echo $BB_USER "  oahs"
+          run: echo $TEST_STUFF "  oahs"
         env:
           BB_USER : ${{ secrets.BB_USER }}
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
+          TEST_STUFF: "SOME VALUE"
 
       # - name: Build and push Docker with AWS
       #   uses: docker/build-push-action@v5
