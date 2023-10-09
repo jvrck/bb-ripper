@@ -13,42 +13,33 @@ jobs:
       - name: Echo run id
         run: echo ${{ github.run_id }}
 
-      - name: Echo base ref
-        run: echo ${{ github.repository.ref }}
+      - name: Check out repo
+        uses: actions/checkout@v4
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
- 
+      - name: Login to Github Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         
-      # - name: Check out repo
-      #   uses: actions/checkout@v4
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}
 
-      # - name: Login to Github Packages
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-        
-      # - name: Build and push Docker image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     platforms: linux/amd64
-      #     file: ./Dockerfile
-      #     push: false
-      #     tags: |
-      #       ghcr.io/jvrck/bbripper:${{ github.run_number }}
-
-      # - name: Build and push Docker with AWS
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     platforms: linux/amd64
-      #     file: ./Dockerfile
-      #     build-args: AWSCLI=TRUE
-      #     push: false
-      #     tags: |
-      #       ghcr.io/jvrck/bbripper:${{ github.run_number }}-aws
+      - name: Build and push Docker with AWS
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          file: ./Dockerfile
+          build-args: AWSCLI=TRUE
+          push: true
+          tags: |
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
