@@ -6,10 +6,9 @@ on:
       - '*'
   push:
     branches:
-      - '122-docker-image-*'
+      - 'release-*'
 
 jobs:
-
   build-and-run-images:
     runs-on: ubuntu-latest
     steps:
