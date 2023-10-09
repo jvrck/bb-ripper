@@ -29,7 +29,7 @@ jobs:
           context: .
           platforms: linux/amd64
           file: ./Dockerfile
-          push: true
+          push: false
           tags: |
             ghcr.io/jvrck/bbripper:${{ github.run_id }}
 
@@ -40,7 +40,7 @@ jobs:
       #     platforms: linux/amd64
       #     file: ./Dockerfile
       #     build-args: AWSCLI=TRUE
-      #     push: true
+      #     push: false
       #     tags: |
       #       ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
 
