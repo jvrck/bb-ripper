@@ -43,3 +43,17 @@ jobs:
           push: true
           tags: |
             ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
+
+  purge-image:
+    name: Delete image from ghcr.io
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete image
+        uses: bots-house/ghcr-delete-image-action@v1.1.0
+        with:
+          # NOTE: at now only orgs is supported
+          owner: jvrck
+          name: bb-ripper
+          # NOTE: using Personal Access Token
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.run_id }}
