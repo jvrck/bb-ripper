@@ -1,6 +1,9 @@
 name: Test Docker Image Workflow
 
 on:
+  pull_request:
+    branches:
+      - '*'
   push:
     branches:
       - '122-docker-image-*'
@@ -64,23 +67,11 @@ jobs:
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
 
-
-      # - name: Build and push Docker with AWS
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     platforms: linux/amd64
-      #     file: ./Dockerfile
-      #     build-args: AWSCLI=TRUE
-      #     push: false
-      #     tags: |
-      #       ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
-
-  # Run-image:
-  #   name: Run built image
-  #   runs-on: ubuntu-latest
-  #   needs: build-and-push-images
-  #   if: success()
-  #   steps:
-  #     - name: Echo run id
-  #       run: echo ${{ github.run_id }}
+      - name: Run Docker image - Check AWS CLI
+        run: |
+          docker run \
+            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws aws --version
+        env:
+          BB_USER: ${{ secrets.BB_USER }}
+          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
+          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
