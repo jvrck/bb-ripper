@@ -16,12 +16,12 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Login to Github Packages
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Login to Github Packages
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
         
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -33,19 +33,22 @@ jobs:
           tags: |
             ghcr.io/jvrck/bbripper:${{ github.run_id }}
 
-      - name: Build and push Docker with AWS
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64
-          file: ./Dockerfile
-          build-args: AWSCLI=TRUE
-          push: true
-          tags: |
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
+      # - name: Build and push Docker with AWS
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     platforms: linux/amd64
+      #     file: ./Dockerfile
+      #     build-args: AWSCLI=TRUE
+      #     push: true
+      #     tags: |
+      #       ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
 
-      - uses: actions/delete-package-versions@v4
-        with:
-          package-version-ids: ${{ github.run_id }}, ${{ github.run_id }}-aws
-          package-name: 'bb-ripper'
-          package-type: 'container'
+  # Run-image:
+  #   name: Run built image
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-push-images
+  #   if: success()
+  #   steps:
+  #     - name: Echo run id
+  #       run: echo ${{ github.run_id }}
