@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -ex
 
+# Update apt and install git
+apt-get update && apt-get upgrade -y && apt-get install -y git
+
 # Install AWS CLI 
 if [ "$AWSCLI" == "TRUE" ] ; then 
     # Required for AWS CLI download and unzip. Remove after installation.
@@ -16,5 +19,8 @@ if [ "$AWSCLI" == "TRUE" ] ; then
     # Clean up after installation.  
     apt-get -y --purge remove curl unzip ;
 else 
-    echo Argument not provided ; 
+    echo AWSCLIE argument not provided ; 
 fi
+
+# Clean up apt cache
+apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
