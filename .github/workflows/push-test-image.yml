@@ -2,6 +2,10 @@ name: Test Docker Image Workflow
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
     branches:
       - '*'
   push:
