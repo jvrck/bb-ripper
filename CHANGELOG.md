@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2023-10-11
+
+### Added
+
+- Bookworm Debian base for Docker image.
+- AWS CLI V2 support for AWS Docker image.
+- Workflow updates for pullrequest support.
+
 ## [1.0.4] - 2023-10-10
 
 ### Added
