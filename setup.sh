@@ -19,7 +19,7 @@ if [ "$AWSCLI" == "TRUE" ] ; then
     # Clean up after installation.  
     apt-get -y --purge remove curl unzip ;
 else 
-    echo AWSCLIE argument not provided ; 
+    echo AWSCLI argument not provided ; 
 fi
 
 # Clean up apt cache
