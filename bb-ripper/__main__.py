@@ -51,4 +51,3 @@ else:
 
 print("--- COMPLETE ---")
 print(f"--- {(time.time() - start_time)} seconds ---")
-print("You have been ripped by the fist")
