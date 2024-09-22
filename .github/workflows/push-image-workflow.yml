@@ -37,7 +37,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
-          push: true
+          push: false
           tags: |
             jvrck/bbripper:latest
             jvrck/bbripper:${{ github.ref_name }}
@@ -73,7 +73,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
           build-args: AWSCLI=TRUE
-          push: true
+          push: false
           tags: |
             jvrck/bbripper:latest-aws
             jvrck/bbripper:${{ github.ref_name }}-aws
