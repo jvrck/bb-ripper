@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@main
+        with:
+          fetch-tags: true
 
       - name: Fetch latest tag
         id: fetch-latest-tag
@@ -61,6 +63,8 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@main
+        with:
+          fetch-tags: true
 
       - name: Fetch latest tag
         id: fetch-latest-tag
