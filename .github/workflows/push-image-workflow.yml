@@ -5,7 +5,9 @@ on:
     tags:
       - '*'
     branches:
-      - 150-weekly-builds
+      - 'release-*'
+      - '*-release'
+      - 'release/*'
   schedule:
       - cron: '0 0 * * 0' # This runs the workflow every Sunday at midnight UTC
 
