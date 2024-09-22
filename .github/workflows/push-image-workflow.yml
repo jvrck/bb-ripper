@@ -26,7 +26,7 @@ jobs:
         id: fetch-latest-tag
         run: |
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "::set-output name=tag::$latest_tag"
+          echo "tag=$latest_tag" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
@@ -53,9 +53,9 @@ jobs:
           push: ${{ env.PUSH }}
           tags: |
             jvrck/bbripper:latest
-            jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}
+            jvrck/bbripper:${{ env.tag }}
             ghcr.io/jvrck/bbripper:latest
-            ghcr.io/jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}
+            ghcr.io/jvrck/bbripper:${{ env.tag }}
 
   build-and-push-awscli-images:
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
         id: fetch-latest-tag
         run: |
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "::set-output name=tag::$latest_tag"
+          echo "tag=$latest_tag" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
@@ -100,6 +100,6 @@ jobs:
           push: ${{ env.PUSH }}
           tags: |
             jvrck/bbripper:latest-aws
-            jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}-aws
+            jvrck/bbripper:${{ env.tag }}-aws
             ghcr.io/jvrck/bbripper:latest-aws
-            ghcr.io/jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}-aws
+            ghcr.io/jvrck/bbripper:${{ env.tag }}-aws
