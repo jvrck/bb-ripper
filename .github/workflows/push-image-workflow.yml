@@ -6,6 +6,8 @@ on:
       - '*'
     branches:
       - 150-weekly-builds
+  schedule:
+      - cron: '0 0 * * 0' # This runs the workflow every Sunday at midnight UTC
 
 jobs:
 
@@ -16,6 +18,12 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@main
+
+      - name: Fetch latest tag
+        id: fetch-latest-tag
+        run: |
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "::set-output name=tag::$latest_tag"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
@@ -42,9 +50,9 @@ jobs:
           push: ${{ env.PUSH }}
           tags: |
             jvrck/bbripper:latest
-            jvrck/bbripper:${{ github.ref_name }}
+            jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}
             ghcr.io/jvrck/bbripper:latest
-            ghcr.io/jvrck/bbripper:${{ github.ref_name }}
+            ghcr.io/jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}
 
   build-and-push-awscli-images:
     runs-on: ubuntu-latest
@@ -53,6 +61,12 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@main
+
+      - name: Fetch latest tag
+        id: fetch-latest-tag
+        run: |
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "::set-output name=tag::$latest_tag"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
@@ -80,6 +94,6 @@ jobs:
           push: ${{ env.PUSH }}
           tags: |
             jvrck/bbripper:latest-aws
-            jvrck/bbripper:${{ github.ref_name }}-aws
+            jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}-aws
             ghcr.io/jvrck/bbripper:latest-aws
-            ghcr.io/jvrck/bbripper:${{ github.ref_name }}-aws
+            ghcr.io/jvrck/bbripper:${{ steps.fetch-latest-tag.outputs.tag }}-aws
