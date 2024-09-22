@@ -11,6 +11,8 @@ jobs:
 
   build-and-push-images:
     runs-on: ubuntu-latest
+    env:
+      PUSH: ${{ github.ref == 'refs/heads/master' && 'true' || 'false' }}
     steps:
       - name: Check out repo
         uses: actions/checkout@main
@@ -37,6 +39,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
+          # push: ${{ env.PUSH }}
           push: false
           tags: |
             jvrck/bbripper:latest
@@ -46,6 +49,8 @@ jobs:
 
   build-and-push-awscli-images:
     runs-on: ubuntu-latest
+    env:
+      PUSH: ${{ github.ref == 'refs/heads/master' && 'true' || 'false' }}
     steps:
       - name: Check out repo
         uses: actions/checkout@main
@@ -73,6 +78,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
           build-args: AWSCLI=TRUE
+          # push: ${{ env.PUSH }}
           push: false
           tags: |
             jvrck/bbripper:latest-aws
