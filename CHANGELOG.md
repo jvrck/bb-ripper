@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Update security policy with supported versions
+- Added weekly builds
+- Fixed actions to use the latest versions
+- Added logic to test docker builds on release branches
+- Added devcontainer for docker based local development
+
+## [1.2.0] - 2024-09-22
+
+### Added
+
 - Python version upgrade to 3.12
 - Update dependency versions
 
