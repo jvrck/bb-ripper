@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2024-09-28
+
+### Added
+
+- Update security policy with supported versions
+- Added weekly builds
+- Fixed actions to use the latest versions
+- Added logic to test docker builds on release branches
+- Added devcontainer for docker based local development
+
 ## [1.2.0] - 2024-09-22
 
 ### Added
