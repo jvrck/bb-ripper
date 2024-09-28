@@ -8,6 +8,7 @@ on:
       - 'release-*'
       - '*-release'
       - 'release/*'
+      - 'master'
   schedule:
       - cron: '0 0 * * 0' # This runs the workflow every Sunday at midnight UTC
 
