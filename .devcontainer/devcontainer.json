@@ -1,7 +1,10 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
+
+// Use this decontainer if you want to run in a codepsace. Docker will work perfectly.
+// You can still use this configuration on a Mac but thre will be problems with running docker in the image.
 {
-	"name": "Python 3",
+	"name": "bb-ripper dev container",
 	
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm"
+	"image": "ghcr.io/jvrck/noble-full"
 }
