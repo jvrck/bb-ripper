@@ -14,6 +14,9 @@ on:
       - '*-release'
       - 'release/*'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-run-images:
     runs-on: ubuntu-latest

@@ -12,6 +12,10 @@ on:
   schedule:
       - cron: '0 0 * * 0' # This runs the workflow every Sunday at midnight UTC
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
 
   build-and-push-images:
