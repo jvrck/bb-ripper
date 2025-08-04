@@ -1,0 +1,10 @@
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp/
+env_setup.sh
+LICENSE
+CODE_OF_CONDUCT.md
+repomix.config.json
+.github/ISSUE_TEMPLATE/
+.repomixignore
