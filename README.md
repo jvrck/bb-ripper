@@ -4,11 +4,42 @@ This project downloads all Bitbucket repositories and every branch for each repo
 
 ## Bitbucket Authentication
 
-This application works with [Bitbucket App Passwords](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/)
+This application supports two authentication methods:
+
+### API Tokens (Recommended)
+
+**Required after June 9, 2026** when app passwords are deprecated.
+
+API tokens provide:
+- Expiration control
+- Centralized management for admins
+- Modern security scopes
+
+[Create an API token](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/)
+
+### App Passwords (Legacy - Deprecated)
+
+⚠️ **App passwords will stop working on June 9, 2026**
+
+Existing app passwords will continue to work until that date, but no new app passwords can be created as of September 9, 2025.
+
+[More about app password deprecation](https://www.atlassian.com/blog/bitbucket/bitbucket-cloud-transitions-to-api-tokens-enhancing-security-with-app-password-deprecation)
 
 ## Environment Settings
 
 The application requires the following environment variables to run.
+
+### For API Token Authentication (Recommended)
+
+`BB_EMAIL` Your Atlassian account email.
+
+`BB_API_TOKEN` Your Bitbucket API token.
+
+`BB_WORKSPACE` The name of the Bitbucket workspace.
+
+`BB_RIPPER_EXPORT_DIRECTORY` The path of the output.
+
+### For App Password Authentication (Legacy)
 
 `BB_USER` The username component of the Bitbucket App Password.
 
@@ -18,7 +49,9 @@ The application requires the following environment variables to run.
 
 `BB_RIPPER_EXPORT_DIRECTORY` The path of the output.
 
-With the optional environment variable `BB_TEST_COUNTER` you can pull down only a specified number of repositories. This is useful for testing purposes. All values that are non integer and lower that 1 will be ignored.
+### Optional Settings
+
+`BB_TEST_COUNTER` Limit the number of repositories to process (useful for testing). All values that are non-integer or less than 1 will be ignored.
 
 ## Running the ripper
 

@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import requests
+from auth_helper import get_api_auth
 
 BB_API_ENDPOINT = 'https://api.bitbucket.org/2.0'
 
@@ -31,7 +32,7 @@ class BBProject:
         logging.info("Get projects request endpoint %s", request_endpoint)
 
         session = requests.session()
-        session.auth = (os.environ['BB_USER'], os.environ['BB_PASSWORD'])
+        session.auth = get_api_auth()
 
         projects_request = session.get(request_endpoint)
         projects_json = json.loads(projects_request.text)
@@ -72,7 +73,7 @@ class BBRepo:
                      request_endpoint)
 
         session = requests.session()
-        session.auth = (os.environ['BB_USER'], os.environ['BB_PASSWORD'])
+        session.auth = get_api_auth()
 
         repos = []
 

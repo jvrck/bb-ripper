@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime
 from shutil import which
 import shutil
+from auth_helper import get_git_https_url
 
 output_dir = ""
 output_base = ""
@@ -58,7 +59,7 @@ def clone_repo(repo, output_dir):
         os.makedirs(clone_dir)
     os.chdir(clone_dir)
     # make sure to suppress output when using https
-    os.system(f"git clone {get_https_url(repo.https)} . >/dev/null 2>&1")
+    os.system(f"git clone {get_git_https_url(repo.https)} . >/dev/null 2>&1")
 
     branches = subprocess.run(["git", "branch", "-r"],
                               stdout=subprocess.PIPE,
@@ -83,11 +84,3 @@ def zip_output_dir():
     print(f"Dir to zip: {directory}")
     os.chdir(output_base)
     os.system(f"tar -cvzf {directory}.tar.gz {directory}/")
-
-def get_https_url(url):
-    """
-    Function that returns a https uld that contains the username and password.
-    """
-    search_text = f"https://{os.environ['BB_USER']}"
-    replace_text = f"https://{ os.environ['BB_USER']}:{os.environ['BB_PASSWORD']}"
-    return url.replace(search_text, replace_text)
