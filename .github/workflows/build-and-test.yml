@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - '*'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
 
-  build-and-test:
+  build-and-test-app-password:
+    name: Test with App Password (Legacy)
     runs-on: ubuntu-latest
     
     steps:
@@ -23,10 +25,33 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: pip install pylint && pylint ./bb-ripper/
-      - run: python3 ./bb-ripper/.
+      - name: Test with App Password
+        run: python3 ./bb-ripper/.
         env:
           BB_USER : ${{ secrets.BB_USER }}
           BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
+          BB_RIPPER_EXPORT_DIRECTORY: ${{ secrets.BB_RIPPER_EXPORT_DIRECTORY }}
+
+  build-and-test-api-token:
+    name: Test with API Token (Recommended)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@main
+    
+      - name: Setup Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: pip install pylint && pylint ./bb-ripper/
+      - name: Test with API Token
+        run: python3 ./bb-ripper/.
+        env:
+          BB_EMAIL: ${{ secrets.BB_EMAIL }}
+          BB_API_TOKEN: ${{ secrets.BB_API_TOKEN }}
+          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
           BB_RIPPER_EXPORT_DIRECTORY: ${{ secrets.BB_RIPPER_EXPORT_DIRECTORY }}
   

@@ -1,4 +1,27 @@
-BB_USER=
-BB_PASSWORD=
-BB_WORKSPACE=
-BB_RIPPER_EXPORT_DIRECTORY=
+# Bitbucket Authentication Configuration
+# Choose ONE of the following authentication methods:
+
+# ============================================
+# Option 1: App Password (LEGACY - deprecated)
+# ============================================
+# App passwords work until June 9, 2026
+# After that date, you MUST use API tokens
+#
+# BB_USER=your_bitbucket_username
+# BB_PASSWORD=your_app_password
+# BB_WORKSPACE=your_workspace_name
+# BB_RIPPER_EXPORT_DIRECTORY=/path/to/output
+
+# ============================================
+# Option 2: API Token (RECOMMENDED)
+# ============================================
+# Required after June 9, 2026
+# More secure with expiration control and centralized management
+#
+BB_EMAIL=your.email@example.com
+BB_API_TOKEN=ATBBxxx...
+BB_WORKSPACE=your_workspace_name
+BB_RIPPER_EXPORT_DIRECTORY=/path/to/output
+
+# Optional: Limit number of repos for testing
+# BB_TEST_COUNTER=5

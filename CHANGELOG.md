@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2026-03-05
+
+### Added
+
+- Support for Bitbucket API tokens alongside app passwords
+- New `BB_EMAIL` and `BB_API_TOKEN` environment variables for API token authentication
+- Automatic authentication mode detection based on environment variables
+- New `auth_helper` module for centralized authentication handling
+
+### Changed
+
+- Updated `bbhelper.py` to use new authentication helper for REST API calls
+- Updated `ripper_utils.py` to use new authentication helper for git operations
+- Updated `README.md` with comprehensive authentication documentation
+- Updated `docenv.example` to show both authentication methods
+
+### Note
+
+- App passwords are deprecated by Atlassian and will stop working on June 9, 2026
+- API token support is now the recommended authentication method
+- Backward compatibility maintained for existing app password users
+
 ## [1.2.6] - 2026-03-05
 
 ### Changed
