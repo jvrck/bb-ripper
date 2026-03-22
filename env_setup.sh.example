@@ -2,7 +2,30 @@
 
 echo "BB Ripper Env Setup"
 
-export BB_USER=
-export BB_PASSWORD=
-export BB_WORKSPACE=
-export BB_RIPPER_EXPORT_DIRECTORY=
+# Bitbucket Authentication Configuration
+# Choose ONE of the following authentication methods:
+
+# ============================================
+# Option 1: API Token (RECOMMENDED)
+# ============================================
+# Required after June 9, 2026
+# More secure with expiration control and centralized management
+#
+export BB_EMAIL=your.email@example.com
+export BB_API_TOKEN=ATBBxxx...
+export BB_WORKSPACE=your_workspace_name
+export BB_RIPPER_EXPORT_DIRECTORY=/path/to/output
+
+# ============================================
+# Option 2: App Password (LEGACY - deprecated)
+# ============================================
+# App passwords work until June 9, 2026
+# After that date, you MUST use API tokens
+#
+# export BB_USER=your_bitbucket_username
+# export BB_PASSWORD=your_app_password
+# export BB_WORKSPACE=your_workspace_name
+# export BB_RIPPER_EXPORT_DIRECTORY=/path/to/output
+
+# Optional: Limit number of repos for testing
+# export BB_TEST_COUNTER=5
