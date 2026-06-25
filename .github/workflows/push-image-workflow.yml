@@ -1,4 +1,6 @@
 name: Push Image Workflow
+env:
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
 
 on:
   push:
