@@ -1,4 +1,6 @@
 name: Test Docker Image Workflow
+env:
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
 
 on:
   pull_request:
