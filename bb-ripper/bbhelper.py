@@ -21,6 +21,16 @@ class BitbucketAPIError(RuntimeError):
     """Raised when Bitbucket returns an unusable or unsafe API response."""
 
 
+def _normalize_project(project):
+    """Return project metadata, or None for every unassigned payload shape."""
+    if not isinstance(project, dict):
+        return None
+    project_key = project.get("key")
+    if project_key is None or project_key == "":
+        return None
+    return project
+
+
 def _validate_api_url(url):
     parsed = urlsplit(url)
     if (
@@ -104,7 +114,7 @@ class BBRepo:
         self.slug = data["slug"]
         if not isinstance(self.slug, str):
             raise TypeError("repository slug must be a string")
-        self.project = data["project"]
+        self.project = _normalize_project(data.get("project"))
         clone_links = data["links"]["clone"]
         if not isinstance(clone_links, list):
             raise TypeError("clone links must be a list")

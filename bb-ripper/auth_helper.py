@@ -13,6 +13,20 @@ REQUIRED_ENVIRONMENT = (
     "BB_WORKSPACE",
     "BB_RIPPER_EXPORT_DIRECTORY",
 )
+PROJECT_FOLDERS_ENVIRONMENT = "BB_USE_PROJECT_FOLDERS"
+
+
+def use_project_folders(environment=None):
+    """Return whether project folders are enabled, rejecting unknown values."""
+    values = os.environ if environment is None else environment
+    value = values.get(PROJECT_FOLDERS_ENVIRONMENT, "").strip().lower()
+    if value in {"", "false"}:
+        return False
+    if value == "true":
+        return True
+    raise ValueError(
+        f"{PROJECT_FOLDERS_ENVIRONMENT} must be true or false"
+    )
 
 
 def validate_environment(environment=None):
@@ -38,6 +52,8 @@ def validate_environment(environment=None):
     allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
     if workspace in {".", ".."} or any(char not in allowed for char in workspace):
         raise ValueError("BB_WORKSPACE must be a valid Bitbucket workspace slug")
+
+    use_project_folders(values)
 
 
 def get_api_auth(environment=None):

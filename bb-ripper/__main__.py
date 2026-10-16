@@ -4,7 +4,7 @@ import os
 import sys
 import time
 
-from auth_helper import validate_environment
+from auth_helper import use_project_folders, validate_environment
 from bbhelper import BBRepo
 from ripper_utils import BackupError
 from ripper_utils import check_git
@@ -33,10 +33,12 @@ def run_backup():
     workspace_repos = BBRepo.GetWorkspaceRepos(os.environ["BB_WORKSPACE"])
     if limit is not None:
         workspace_repos = workspace_repos[:limit]
-    backup_plan = plan_repo_destinations(workspace_repos, output_directory)
+    backup_plan = plan_repo_destinations(
+        workspace_repos, output_directory, use_project_folders()
+    )
 
     for repo, repository_path in backup_plan:
-        print(f"Backing up repository: {repo.name} ({repo.slug})")
+        print(f"Backing up repository: {repo.name} ({repository_path})")
         clone_repo(repo, output_directory, repository_path)
 
     archive_path = zip_output_dir(output_directory)

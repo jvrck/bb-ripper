@@ -100,6 +100,46 @@ class MainTests(unittest.TestCase):
 
         clone.assert_called_once_with(first, "/tmp/source", Path("duplicate"))
 
+    def test_grouped_ambiguity_stops_before_clone_archive_or_cleanup(self):
+        repos = [
+            SimpleNamespace(
+                name="Real", slug="real", project={"key": "UNASSIGNED"}
+            ),
+            SimpleNamespace(name="Fallback", slug="fallback", project=None),
+        ]
+        environment = {**ENVIRONMENT, "BB_USE_PROJECT_FOLDERS": "true"}
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source"
+            source.mkdir()
+            with patch.dict(os.environ, environment, clear=True), \
+                    patch.object(MAIN, "check_git", return_value="/usr/bin/git"), \
+                    patch.object(
+                        MAIN, "create_output_directory", return_value=str(source)
+                    ), \
+                    patch.object(
+                        MAIN.BBRepo, "GetWorkspaceRepos", return_value=repos
+                    ), \
+                    patch.object(MAIN, "clone_repo") as clone, \
+                    patch.object(MAIN, "zip_output_dir") as archive, \
+                    patch.object(MAIN, "delete_output_directory") as delete:
+                with self.assertRaisesRegex(MAIN.BackupError, "conflicts"):
+                    MAIN.run_backup()
+
+            self.assertEqual([], list(source.iterdir()))
+            clone.assert_not_called()
+            archive.assert_not_called()
+            delete.assert_not_called()
+
+    def test_invalid_project_setting_stops_before_backup_work(self):
+        environment = {**ENVIRONMENT, "BB_USE_PROJECT_FOLDERS": "yes"}
+        with patch.dict(os.environ, environment, clear=True), \
+                patch.object(MAIN, "check_git") as check_git, \
+                patch.object(MAIN, "create_output_directory") as create:
+            with self.assertRaisesRegex(ValueError, "BB_USE_PROJECT_FOLDERS"):
+                MAIN.run_backup()
+        check_git.assert_not_called()
+        create.assert_not_called()
+
     def test_main_returns_nonzero_without_claiming_success(self):
         with patch.object(MAIN, "run_backup", side_effect=RuntimeError("failed")):
             self.assertEqual(1, MAIN.main())

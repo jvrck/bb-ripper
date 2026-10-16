@@ -32,7 +32,9 @@ All four values are required and validated before backup work starts:
 - `BB_RIPPER_EXPORT_DIRECTORY`: destination for the completed archive.
 
 `BB_TEST_COUNTER` optionally limits the number of repositories. `LOGLEVEL`
-controls API logging. App-password variables are intentionally unsupported.
+controls API logging. `BB_USE_PROJECT_FOLDERS` optionally groups repository
+slugs under project keys (`true`/`false`, default `false`). App-password
+variables are intentionally unsupported.
 
 ## Architecture and safety invariants
 
@@ -46,6 +48,9 @@ controls API logging. App-password variables are intentionally unsupported.
 - Repository display names are report-only. Repository slugs are validated as
   single path components, and all selected destinations are checked for
   containment and case-insensitive collisions before cloning begins.
+- The output directory is assumed to be exclusively owned by the backup
+  process. Concurrent local modification or symlink swapping is outside the
+  threat model; containment is re-checked after project folders are created.
 - Git, branch, API, and archive failures are terminal. Never turn these into a
   successful or partial backup result.
 - Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket

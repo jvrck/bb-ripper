@@ -6,3 +6,6 @@ export BB_EMAIL=
 export BB_API_TOKEN=
 export BB_WORKSPACE=
 export BB_RIPPER_EXPORT_DIRECTORY=
+
+# Optional: organize repositories by Bitbucket project (default: false).
+# export BB_USE_PROJECT_FOLDERS=true
