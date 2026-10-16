@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add opt-in `BB_USE_PROJECT_FOLDERS` layout using project keys and an
   `UNASSIGNED` fallback, with fail-closed ambiguity and path validation.
+- Add linux/amd64 and linux/arm64 image build smoke coverage for pull requests
+  and release branches.
 
 ### Changed
 

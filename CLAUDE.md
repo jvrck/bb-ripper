@@ -12,6 +12,7 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 ```bash
 uv venv -p 3.12 && uv pip install -r requirements.txt
 source .venv/bin/activate
+uv pip install pylint==4.1.3 pip-audit==2.10.1
 python -m unittest discover -v
 pylint bb-ripper scripts
 pip-audit --requirement requirements.txt

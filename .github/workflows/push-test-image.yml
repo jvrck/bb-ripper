@@ -74,7 +74,9 @@ jobs:
           IMAGE: ${{ matrix.image }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          docker run --rm --platform "$PLATFORM" "$IMAGE" python3 --version 2>&1 | grep -q '^Python 3\.12\.'
+          python_version="$(docker run --rm --platform "$PLATFORM" "$IMAGE" python3 --version 2>&1)"
+          echo "$python_version"
+          grep -q '^Python 3\.12\.' <<< "$python_version"
           docker run --rm --platform "$PLATFORM" "$IMAGE" git --version
           docker run --rm --platform "$PLATFORM" "$IMAGE" python3 -c "import requests, auth_helper, bbhelper, ripper_utils"
           test "$(docker run --rm --platform "$PLATFORM" "$IMAGE" uname -m)" = "$EXPECTED_ARCHITECTURE"

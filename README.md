@@ -108,7 +108,10 @@ docker run --env-file dockenv -v "$(pwd)/data:/data" --rm -it jvrck/bbripper:lat
 
 ### Building and running the docker image
 
-To build the docker image
+The Dockerfile uses BuildKit features. BuildKit is enabled by default in
+current Docker and Docker Buildx releases.
+
+To build the docker image:
 
 ```bash
 docker build --no-cache -t ripper .
