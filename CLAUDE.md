@@ -10,16 +10,18 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 ## Development commands
 
 ```bash
-uv venv -p 3.12 && uv pip install -r requirements.txt
-source .venv/bin/activate
-uv pip install pylint==4.1.3 pip-audit==2.10.1
-python -m unittest discover -v
-pylint bb-ripper scripts
-pip-audit --requirement requirements.txt
+uv sync --locked
+uv run --locked python -m unittest discover -v
+uv run --locked pylint src/bb_ripper bb-ripper scripts
+uv run --locked pip-audit -r requirements.txt
+uv build
 ```
 
 For the supported pip fallback, create and activate a Python 3.12 virtual
-environment, then run `python -m pip install -r requirements.txt`.
+environment, run `python -m pip install -r requirements.txt`, and use
+`PYTHONPATH=src python -m unittest discover -v`. After dependency changes,
+regenerate the pip fallback with `scripts/export_requirements.sh` using the
+pinned uv 0.12.24.
 
 Build both supported image variants with:
 
@@ -44,13 +46,15 @@ variables are intentionally unsupported.
 
 ## Architecture and safety invariants
 
-- `bb-ripper/__main__.py` validates configuration, orchestrates the backup,
+- `src/bb_ripper/__main__.py` validates configuration, orchestrates the backup,
   and deletes temporary source only after an archive is created and verified.
-- `bb-ripper/bbhelper.py` performs bounded REST requests with status, shape,
+- `src/bb_ripper/bbhelper.py` performs bounded REST requests with status, shape,
   timeout, and same-origin pagination checks.
-- `bb-ripper/ripper_utils.py` clones without shell interpolation. A
+- `src/bb_ripper/ripper_utils.py` clones without shell interpolation. A
   process-local Git credential helper exposes the API token only to the clone
   process; persisted origins and archives must remain credential-free.
+- `bb-ripper/__main__.py` is only the legacy source and container launcher; it
+  delegates to the installed `bb_ripper` package.
 - Repository display names are report-only. Repository slugs are validated as
   single path components, and all selected destinations are checked for
   containment and case-insensitive collisions before cloning begins.

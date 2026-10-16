@@ -1,15 +1,10 @@
 """Tests for bounded, validated Bitbucket API pagination."""
 
 import os
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "bb-ripper"))
-
-from bbhelper import BBRepo, BitbucketAPIError, REQUEST_TIMEOUT
+from bb_ripper.bbhelper import BBRepo, BitbucketAPIError, REQUEST_TIMEOUT
 
 ENVIRONMENT = {
     "BB_EMAIL": "backup@example.test",
@@ -88,7 +83,7 @@ class BBHelperTests(unittest.TestCase):
             FakeResponse({"values": [repo_payload("one")], "next": next_url}),
             FakeResponse({"values": [repo_payload("two")]}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             repos = BBRepo.GetWorkspaceRepos("workspace")
 
         self.assertEqual(["one", "two"], [repo.name for repo in repos])
@@ -103,7 +98,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": [repo_payload("Tools/API", "tools-api")]})
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             repos = BBRepo.GetWorkspaceRepos("workspace")
 
         self.assertEqual("Tools/API", repos[0].name)
@@ -131,7 +126,7 @@ class BBHelperTests(unittest.TestCase):
         for payload in invalid_payloads:
             with self.subTest(payload=payload):
                 session = FakeSession([FakeResponse({"values": [payload]})])
-                with patch("bbhelper.requests.Session", return_value=session):
+                with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
                     with self.assertRaisesRegex(BitbucketAPIError, "invalid item"):
                         BBRepo.GetWorkspaceRepos("workspace")
 
@@ -139,7 +134,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": []}, status_code=500)
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -149,14 +144,14 @@ class BBHelperTests(unittest.TestCase):
                 {"values": []}, status_code=302
             )
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
         self.assertEqual(1, len(session.calls))
 
     def test_malformed_response_is_rejected(self):
         session = FakeSession([FakeResponse({"unexpected": []})])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "values list"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -167,7 +162,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": [], "next": first_url}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "loop"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -175,7 +170,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": [], "next": "https://example.test/steal"}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "unexpected URL"):
                 BBRepo.GetWorkspaceRepos("workspace")
         self.assertEqual(1, len(session.calls))

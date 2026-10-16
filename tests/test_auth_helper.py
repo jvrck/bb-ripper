@@ -1,15 +1,10 @@
 """Tests for API-token-only configuration and URL handling."""
 
 import os
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "bb-ripper"))
-
-from auth_helper import (
+from bb_ripper.auth_helper import (
     get_api_auth,
     get_git_https_url,
     use_project_folders,

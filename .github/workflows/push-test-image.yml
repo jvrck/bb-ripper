@@ -68,6 +68,16 @@ jobs:
             exit 1
           fi
           grep -q "Missing required environment variables" container-output.txt
+          if docker run --rm --platform "$PLATFORM" "$IMAGE" bb-ripper >container-output.txt 2>&1; then
+            echo "bb-ripper unexpectedly succeeded without required settings"
+            exit 1
+          fi
+          grep -q "Missing required environment variables" container-output.txt
+          if docker run --rm --platform "$PLATFORM" "$IMAGE" python3 -m bb_ripper >container-output.txt 2>&1; then
+            echo "python -m bb_ripper unexpectedly succeeded without required settings"
+            exit 1
+          fi
+          grep -q "Missing required environment variables" container-output.txt
       - name: Verify runtime tools and imports
         env:
           EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
@@ -78,7 +88,7 @@ jobs:
           echo "$python_version"
           grep -q '^Python 3\.12\.' <<< "$python_version"
           docker run --rm --platform "$PLATFORM" "$IMAGE" git --version
-          docker run --rm --platform "$PLATFORM" "$IMAGE" python3 -c "import requests, auth_helper, bbhelper, ripper_utils"
+          docker run --rm --platform "$PLATFORM" "$IMAGE" python3 -c "import requests, bb_ripper"
           test "$(docker run --rm --platform "$PLATFORM" "$IMAGE" uname -m)" = "$EXPECTED_ARCHITECTURE"
       - name: Verify AWS CLI
         if: matrix.variant == 'aws'
