@@ -23,6 +23,7 @@ from ripper_utils import (
     BackupError,
     clone_repo,
     delete_output_directory,
+    plan_repo_destinations,
     zip_output_dir,
 )
 
@@ -143,12 +144,15 @@ class RipperUtilsTests(unittest.TestCase):
     def test_clone_and_archive_never_persist_token(self):
         destination = self.root / "backup"
         destination.mkdir()
-        repo_name = "repo with spaces;$(no-shell)"
-        repo = SimpleNamespace(name=repo_name, https=self.fixture.url)
+        repo_name = "Tools/API"
+        repo_slug = "tools-api"
+        repo = SimpleNamespace(
+            name=repo_name, slug=repo_slug, https=self.fixture.url
+        )
 
         clone_repo(repo, destination)
 
-        clone = destination / repo_name
+        clone = destination / repo_slug
         origin = run_git("remote", "get-url", "origin", cwd=clone).stdout.strip()
         branches = run_git("branch", "--format=%(refname:short)", cwd=clone).stdout
         self.assertEqual(self.fixture.url, origin)
@@ -167,15 +171,40 @@ class RipperUtilsTests(unittest.TestCase):
         archive_path = Path(zip_output_dir(destination))
         self.assertTrue(destination.exists(), "archiving must not remove its source")
         with tarfile.open(archive_path, "r:gz") as archive:
+            member_names = [member.name for member in archive.getmembers()]
+            self.assertTrue(any(
+                name.startswith(f"{destination.name}/{repo_slug}/")
+                for name in member_names
+            ))
             for member in archive.getmembers():
                 if member.isfile():
                     extracted = archive.extractfile(member)
                     self.assertNotIn(TOKEN.encode(), extracted.read())
 
+    def test_similar_display_names_with_distinct_slugs_clone_separately(self):
+        destination = self.root / "distinct"
+        destination.mkdir()
+        repos = [
+            SimpleNamespace(
+                name="Tools/API", slug="tools-api", https=self.fixture.url
+            ),
+            SimpleNamespace(
+                name="Tools/API", slug="tools-api-2", https=self.fixture.url
+            ),
+        ]
+
+        for repo, repository_path in plan_repo_destinations(repos, destination):
+            clone_repo(repo, destination, repository_path)
+
+        self.assertTrue((destination / "tools-api" / ".git").is_dir())
+        self.assertTrue((destination / "tools-api-2" / ".git").is_dir())
+
     def test_clone_failure_is_nonzero_and_keeps_recoverable_directory(self):
         destination = self.root / "failed-backup"
         destination.mkdir()
-        repo = SimpleNamespace(name="missing", https=self.fixture.url + "/missing")
+        repo = SimpleNamespace(
+            name="Missing", slug="missing", https=self.fixture.url + "/missing"
+        )
         with self.assertRaisesRegex(BackupError, "Git backup failed"):
             clone_repo(repo, destination)
         self.assertTrue((destination / "missing").is_dir())
@@ -183,7 +212,7 @@ class RipperUtilsTests(unittest.TestCase):
     def test_branch_creation_failure_is_propagated(self):
         destination = self.root / "branch-failure"
         destination.mkdir()
-        repo = SimpleNamespace(name="repo", https=self.fixture.url)
+        repo = SimpleNamespace(name="Repo", slug="repo", https=self.fixture.url)
         original_run_git = ripper_utils._run_git
 
         def fail_test_branch(arguments, cwd, **kwargs):
@@ -196,13 +225,59 @@ class RipperUtilsTests(unittest.TestCase):
                 clone_repo(repo, destination)
         self.assertTrue((destination / "repo" / ".git").is_dir())
 
-    def test_unsafe_repository_name_is_rejected_before_filesystem_changes(self):
+    def test_unsafe_repository_slugs_are_rejected_before_filesystem_changes(self):
         destination = self.root / "safe"
         destination.mkdir()
-        repo = SimpleNamespace(name="../escape", https=self.fixture.url)
-        with self.assertRaisesRegex(BackupError, "unsafe repository name"):
-            clone_repo(repo, destination)
-        self.assertFalse((self.root / "escape").exists())
+        unsafe_slugs = (
+            "../escape",
+            "/abs",
+            "a/b",
+            "a\\b",
+            "",
+            ".",
+            "..",
+            "nul\x00byte",
+            "control\ncharacter",
+            123,
+            "a" * 256,
+        )
+        for slug in unsafe_slugs:
+            with self.subTest(slug=slug):
+                repo = SimpleNamespace(
+                    name="Unsafe display name", slug=slug, https=self.fixture.url
+                )
+                with self.assertRaisesRegex(BackupError, "unsafe repository slug"):
+                    clone_repo(repo, destination)
+                self.assertEqual([], list(destination.iterdir()))
+                self.assertFalse((self.root / "escape").exists())
+
+    def test_duplicate_destinations_are_rejected_before_directories_are_created(self):
+        destination = self.root / "duplicates"
+        destination.mkdir()
+        duplicate_sets = (
+            ("same", "same"),
+            ("Case-Slug", "case-slug"),
+        )
+        for slugs in duplicate_sets:
+            with self.subTest(slugs=slugs):
+                repos = [
+                    SimpleNamespace(name=f"Repo {index}", slug=slug)
+                    for index, slug in enumerate(slugs)
+                ]
+                with self.assertRaisesRegex(BackupError, "duplicate destinations"):
+                    plan_repo_destinations(repos, destination)
+                self.assertEqual([], list(destination.iterdir()))
+
+    def test_resolved_destination_must_remain_a_direct_child(self):
+        destination = self.root / "contained"
+        destination.mkdir()
+        outside = self.root / "outside"
+        outside.mkdir()
+        (destination / "repo").symlink_to(outside, target_is_directory=True)
+        repo = SimpleNamespace(name="Repo", slug="repo")
+
+        with self.assertRaisesRegex(BackupError, "escapes"):
+            plan_repo_destinations([repo], destination)
 
     def test_archive_failure_keeps_source_and_removes_partial_archive(self):
         source = self.root / "archive-failure"

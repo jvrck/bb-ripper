@@ -43,6 +43,9 @@ controls API logging. App-password variables are intentionally unsupported.
 - `bb-ripper/ripper_utils.py` clones without shell interpolation. A
   process-local Git credential helper exposes the API token only to the clone
   process; persisted origins and archives must remain credential-free.
+- Repository display names are report-only. Repository slugs are validated as
+  single path components, and all selected destinations are checked for
+  containment and case-insensitive collisions before cloning begins.
 - Git, branch, API, and archive failures are terminal. Never turn these into a
   successful or partial backup result.
 - Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket
