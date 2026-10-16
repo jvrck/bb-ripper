@@ -9,8 +9,13 @@ from datetime import datetime
 from pathlib import Path
 from shutil import which
 
-from auth_helper import GIT_USERNAME, get_git_https_url
+from .auth_helper import GIT_USERNAME, get_git_https_url
 
+_SAFE_COMPONENT_CHARACTERS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+)
+_MAX_COMPONENT_BYTES = 255
+_UNASSIGNED_PROJECT = "UNASSIGNED"
 _CREDENTIAL_HELPER = (
     "!f() { if [ \"$1\" = get ]; then "
     "printf '%s\\n' \"username=$BB_GIT_USERNAME\" "
@@ -49,15 +54,115 @@ def check_git():
     return which("git")
 
 
-def _validate_repo_name(name):
+def _validate_component(value, label):
+    """Validate and return one safe filesystem path component."""
     if (
-            not isinstance(name, str)
-            or not name
-            or name in {".", ".."}
-            or Path(name).name != name
-            or "\x00" in name
+            not isinstance(value, str)
+            or not value
+            or value in {".", ".."}
+            or any(character not in _SAFE_COMPONENT_CHARACTERS for character in value)
+            or len(value.encode("utf-8")) > _MAX_COMPONENT_BYTES
     ):
-        raise BackupError("Bitbucket returned an unsafe repository name")
+        raise BackupError(f"Bitbucket returned an unsafe {label}")
+    return value
+
+
+def _validate_repository_slug(slug):
+    """Validate and return one safe repository directory component."""
+    return _validate_component(slug, "repository slug")
+
+
+def _repository_project_key(repo):
+    """Return a repository's project key and whether it is a fallback."""
+    project = getattr(repo, "project", None)
+    if project is None:
+        return _UNASSIGNED_PROJECT, True
+    if not isinstance(project, dict):
+        raise BackupError("Bitbucket returned an unsafe project key")
+    key = project.get("key")
+    return _validate_component(key, "project key"), False
+
+
+def _resolve_repository_destination(backup_directory, repository_path):
+    """Return an exact one- or two-component repository destination."""
+    relative_path = Path(repository_path)
+    if relative_path.is_absolute() or len(relative_path.parts) not in {1, 2}:
+        raise BackupError("Bitbucket returned an unsafe repository destination")
+    for component in relative_path.parts:
+        _validate_component(component, "repository destination")
+
+    try:
+        backup_root = Path(backup_directory).resolve()
+        destination = backup_root / relative_path
+        resolved_destination = destination.resolve()
+    except (OSError, RuntimeError) as error:
+        raise BackupError("Unable to resolve repository destination safely") from error
+    if resolved_destination != destination:
+        raise BackupError("Repository destination escapes the backup directory")
+    return destination
+
+
+def _grouped_repository_path(repo, project_keys, project_state):
+    """Return a grouped path while tracking project-level ambiguities."""
+    project_key, is_fallback = _repository_project_key(repo)
+    if is_fallback:
+        project_state["fallback"] = True
+    else:
+        folded_project = project_key.casefold()
+        previous_key = project_keys.get(folded_project)
+        if previous_key is not None and previous_key != project_key:
+            raise BackupError(
+                "Bitbucket projects have case-insensitive key collisions"
+            )
+        project_keys[folded_project] = project_key
+        if folded_project == _UNASSIGNED_PROJECT.casefold():
+            project_state["real_unassigned"] = True
+    return Path(project_key) / _validate_repository_slug(repo.slug)
+
+
+def plan_repo_destinations(
+        repositories, backup_directory, project_folders=False):
+    """Validate all repository destinations and reject collisions up front."""
+    planned = []
+    destinations = set()
+    project_keys = {}
+    project_state = {"fallback": False, "real_unassigned": False}
+    for repo in repositories:
+        if project_folders:
+            relative_path = _grouped_repository_path(
+                repo, project_keys, project_state
+            )
+        else:
+            relative_path = Path(_validate_repository_slug(repo.slug))
+        _resolve_repository_destination(backup_directory, relative_path)
+        collision_key = str(relative_path).casefold()
+        if collision_key in destinations:
+            raise BackupError("Bitbucket repositories have duplicate destinations")
+        destinations.add(collision_key)
+        planned.append((repo, relative_path))
+    if project_state["fallback"] and project_state["real_unassigned"]:
+        raise BackupError(
+            "A real UNASSIGNED project conflicts with unassigned repositories"
+        )
+    return planned
+
+
+def _validated_repository_path(repo, repository_path):
+    """Validate a clone path against the repository slug and project."""
+    slug = _validate_repository_slug(repo.slug)
+    relative_path = Path(slug) if repository_path is None else Path(repository_path)
+    if len(relative_path.parts) == 1:
+        expected_path = Path(slug)
+    elif len(relative_path.parts) == 2:
+        project_key, _is_fallback = _repository_project_key(repo)
+        expected_path = Path(project_key) / slug
+    else:
+        expected_path = None
+    if relative_path != expected_path:
+        raise BackupError(
+            "Repository destination does not match its project and slug"
+        )
+    return relative_path
 
 
 def _git_clone_environment():
@@ -98,15 +203,20 @@ def _run_git(arguments, cwd, **kwargs):
     )
 
 
-def clone_repo(repo, destination):
+def clone_repo(repo, destination, repository_path=None):
     """Clone a repository securely and create local refs for all branches."""
-    _validate_repo_name(repo.name)
+    relative_path = _validated_repository_path(repo, repository_path)
     clean_url = get_git_https_url(repo.https)
-    clone_dir = Path(destination) / repo.name
+    clone_dir = _resolve_repository_destination(destination, relative_path)
     try:
+        if len(relative_path.parts) == 2:
+            clone_dir.parent.mkdir(exist_ok=True)
+            clone_dir = _resolve_repository_destination(destination, relative_path)
         clone_dir.mkdir()
     except OSError as error:
-        raise BackupError(f"Unable to create backup directory for {repo.name}") from error
+        raise BackupError(
+            f"Unable to create backup directory for {repo.name} ({repo.slug})"
+        ) from error
 
     try:
         _run_git(

@@ -9,11 +9,29 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 
 ## Development commands
 
+The project pins uv 0.12.24. Install that version, or replace `uv` with
+`uvx uv@0.12.24` in these commands when the default uv differs.
+
 ```bash
-python -m pip install -r requirements.txt
-python -m unittest discover -v
-pylint bb-ripper scripts
+uv sync --locked
+uv run --locked python -m unittest discover -v
+uv run --locked pylint src/bb_ripper bb-ripper scripts
+uv run --locked pip-audit -r requirements.txt
+uv build
 ```
+
+For the supported pip fallback (no uv required):
+
+```bash
+python3.12 -m venv .venv  # or: uv venv --seed -p 3.12 .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+PYTHONPATH=src python -m unittest discover -v
+```
+
+After dependency changes, regenerate the pip fallback with
+`scripts/export_requirements.sh` (prefix `BBRIPPER_UV="uvx uv@0.12.24"` when
+the default uv is not the pinned version).
 
 Build both supported image variants with:
 
@@ -32,17 +50,27 @@ All four values are required and validated before backup work starts:
 - `BB_RIPPER_EXPORT_DIRECTORY`: destination for the completed archive.
 
 `BB_TEST_COUNTER` optionally limits the number of repositories. `LOGLEVEL`
-controls API logging. App-password variables are intentionally unsupported.
+controls API logging. `BB_USE_PROJECT_FOLDERS` optionally groups repository
+slugs under project keys (`true`/`false`, default `false`). App-password
+variables are intentionally unsupported.
 
 ## Architecture and safety invariants
 
-- `bb-ripper/__main__.py` validates configuration, orchestrates the backup,
+- `src/bb_ripper/__main__.py` validates configuration, orchestrates the backup,
   and deletes temporary source only after an archive is created and verified.
-- `bb-ripper/bbhelper.py` performs bounded REST requests with status, shape,
+- `src/bb_ripper/bbhelper.py` performs bounded REST requests with status, shape,
   timeout, and same-origin pagination checks.
-- `bb-ripper/ripper_utils.py` clones without shell interpolation. A
+- `src/bb_ripper/ripper_utils.py` clones without shell interpolation. A
   process-local Git credential helper exposes the API token only to the clone
   process; persisted origins and archives must remain credential-free.
+- `bb-ripper/__main__.py` is only the legacy source and container launcher; it
+  delegates to the installed `bb_ripper` package.
+- Repository display names are report-only. Repository slugs are validated as
+  single path components, and all selected destinations are checked for
+  containment and case-insensitive collisions before cloning begins.
+- The output directory is assumed to be exclusively owned by the backup
+  process. Concurrent local modification or symlink swapping is outside the
+  threat model; containment is re-checked after project folders are created.
 - Git, branch, API, and archive failures are terminal. Never turn these into a
   successful or partial backup result.
 - Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket

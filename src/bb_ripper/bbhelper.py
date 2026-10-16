@@ -6,7 +6,7 @@ from urllib.parse import quote, urlsplit
 
 import requests
 
-from auth_helper import get_api_auth
+from .auth_helper import get_api_auth
 
 BB_API_ENDPOINT = "https://api.bitbucket.org/2.0"
 BB_API_HOST = "api.bitbucket.org"
@@ -19,6 +19,16 @@ logging.basicConfig(level=LOGLEVEL)
 
 class BitbucketAPIError(RuntimeError):
     """Raised when Bitbucket returns an unusable or unsafe API response."""
+
+
+def _normalize_project(project):
+    """Return project metadata, or None for every unassigned payload shape."""
+    if not isinstance(project, dict):
+        return None
+    project_key = project.get("key")
+    if project_key is None or project_key == "":
+        return None
+    return project
 
 
 def _validate_api_url(url):
@@ -101,7 +111,10 @@ class BBRepo:
 
     def __init__(self, data):
         self.name = data["name"]
-        self.project = data["project"]
+        self.slug = data["slug"]
+        if not isinstance(self.slug, str):
+            raise TypeError("repository slug must be a string")
+        self.project = _normalize_project(data.get("project"))
         clone_links = data["links"]["clone"]
         if not isinstance(clone_links, list):
             raise TypeError("clone links must be a list")

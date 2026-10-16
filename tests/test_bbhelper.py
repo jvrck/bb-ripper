@@ -1,15 +1,10 @@
 """Tests for bounded, validated Bitbucket API pagination."""
 
 import os
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "bb-ripper"))
-
-from bbhelper import BBRepo, BitbucketAPIError, REQUEST_TIMEOUT
+from bb_ripper.bbhelper import BBRepo, BitbucketAPIError, REQUEST_TIMEOUT
 
 ENVIRONMENT = {
     "BB_EMAIL": "backup@example.test",
@@ -17,13 +12,13 @@ ENVIRONMENT = {
     "BB_WORKSPACE": "workspace",
     "BB_RIPPER_EXPORT_DIRECTORY": "/tmp/export",
 }
+MISSING = object()
 
 
-def repo_payload(name):
+def repo_payload(name, slug=MISSING, project=MISSING):
     """Build the minimum valid Bitbucket repository response."""
-    return {
+    payload = {
         "name": name,
-        "project": {"key": "TEST"},
         "links": {
             "clone": [
                 {"name": "https", "href": f"https://bitbucket.org/ws/{name}.git"},
@@ -31,6 +26,15 @@ def repo_payload(name):
             ]
         },
     }
+    if project is MISSING:
+        payload["project"] = {"key": "TEST"}
+    else:
+        payload["project"] = project
+    if slug is MISSING:
+        payload["slug"] = name
+    elif slug is not None:
+        payload["slug"] = slug
+    return payload
 
 
 class FakeResponse:
@@ -79,7 +83,7 @@ class BBHelperTests(unittest.TestCase):
             FakeResponse({"values": [repo_payload("one")], "next": next_url}),
             FakeResponse({"values": [repo_payload("two")]}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             repos = BBRepo.GetWorkspaceRepos("workspace")
 
         self.assertEqual(["one", "two"], [repo.name for repo in repos])
@@ -90,11 +94,47 @@ class BBHelperTests(unittest.TestCase):
             ("backup@example.test", "synthetic-token"), session.auth
         )
 
+    def test_repository_maps_display_name_and_slug_separately(self):
+        session = FakeSession([
+            FakeResponse({"values": [repo_payload("Tools/API", "tools-api")]})
+        ])
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
+            repos = BBRepo.GetWorkspaceRepos("workspace")
+
+        self.assertEqual("Tools/API", repos[0].name)
+        self.assertEqual("tools-api", repos[0].slug)
+
+    def test_repository_tolerates_unassigned_project_shapes(self):
+        projects = (MISSING, None, "not-a-mapping", {}, {"key": None}, {"key": ""})
+        for project in projects:
+            with self.subTest(project=project):
+                payload = repo_payload("repo", project=project)
+                if project is MISSING:
+                    payload.pop("project")
+                repo = BBRepo(payload)
+                self.assertIsNone(repo.project)
+
+    def test_non_string_project_key_is_preserved_for_grouped_validation(self):
+        repo = BBRepo(repo_payload("repo", project={"key": 123}))
+        self.assertEqual({"key": 123}, repo.project)
+
+    def test_missing_or_non_string_slug_is_rejected(self):
+        invalid_payloads = (
+            repo_payload("missing", None),
+            repo_payload("number", 123),
+        )
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                session = FakeSession([FakeResponse({"values": [payload]})])
+                with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
+                    with self.assertRaisesRegex(BitbucketAPIError, "invalid item"):
+                        BBRepo.GetWorkspaceRepos("workspace")
+
     def test_http_failure_is_closed(self):
         session = FakeSession([
             FakeResponse({"values": []}, status_code=500)
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -104,14 +144,14 @@ class BBHelperTests(unittest.TestCase):
                 {"values": []}, status_code=302
             )
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
         self.assertEqual(1, len(session.calls))
 
     def test_malformed_response_is_rejected(self):
         session = FakeSession([FakeResponse({"unexpected": []})])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "values list"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -122,7 +162,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": [], "next": first_url}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "loop"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
@@ -130,7 +170,7 @@ class BBHelperTests(unittest.TestCase):
         session = FakeSession([
             FakeResponse({"values": [], "next": "https://example.test/steal"}),
         ])
-        with patch("bbhelper.requests.Session", return_value=session):
+        with patch("bb_ripper.bbhelper.requests.Session", return_value=session):
             with self.assertRaisesRegex(BitbucketAPIError, "unexpected URL"):
                 BBRepo.GetWorkspaceRepos("workspace")
         self.assertEqual(1, len(session.calls))

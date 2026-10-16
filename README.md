@@ -2,6 +2,10 @@
 
 This project downloads all Bitbucket repositories and every branch for each repository. The resulting downloads are compressed with `tar`.
 
+Each repository is stored in a directory named after its Bitbucket repository
+slug. This differs from versions through 1.2.8, which used the display name, so
+on-disk and archive paths change when a repository's name and slug differ.
+
 ## Bitbucket Authentication
 
 This application uses Bitbucket API tokens. App passwords are no longer
@@ -31,17 +35,52 @@ creating a backup:
 
 `BB_TEST_COUNTER` Limit the number of repositories to process (useful for testing). All values that are non-integer or less than 1 will be ignored.
 
+`BB_USE_PROJECT_FOLDERS` Organize repositories by Bitbucket project key when
+set to `true` (default: `false`). Values are case-insensitive and may include
+surrounding whitespace; values other than `true` or `false` are rejected.
+Repository paths use slugs in either mode. For example:
+
+```text
+bbr-workspace-2026-03-05-T10.00.00/
+  TOOLS/
+    tools-api/
+  UNASSIGNED/
+    standalone-repo/
+```
+
+Repositories without a project key use the `UNASSIGNED` folder. To prevent
+ambiguous backups on case-insensitive filesystems, a real project key that
+differs from another only by case is rejected, as is a real `UNASSIGNED`
+project when the same run contains repositories needing the fallback folder.
+
 ## Running the ripper
 
 ### Local Environment
 
-The application supports Python 3.12.
-
-To install Python dependencies
+The application supports Python 3.12 and pins
+[uv](https://docs.astral.sh/uv/) 0.12.24. Install that version, or, if your
+default uv differs, replace `uv` with `uvx uv@0.12.24` in the commands below
+(for example `uvx uv@0.12.24 sync --locked`). Create the locked development
+environment with:
 
 ```bash
-pip install -r requirements.txt
+uv sync --locked
 ```
+
+`pyproject.toml` and `uv.lock` are authoritative. `requirements.txt` is a
+generated, hashed runtime-only fallback for environments that do not use uv.
+To use that fallback, create a virtual environment with a CPython 3.12
+interpreter (named `python3.12` below; adjust for your system), then install
+the runtime dependencies:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+uv users can create the environment with `uv venv --seed -p 3.12 .venv`
+instead of the first command; activation and the pip install are still required.
 
 ### Set the environment variables
 
@@ -55,12 +94,15 @@ source env_setup.sh
 
 ### Run
 
-To run the application
+Run the installed command through the locked environment:
 
 ```bash
-cd bb-ripper
-python3 .
+uv run --locked bb-ripper
 ```
+
+`uv run --locked python -m bb_ripper` is equivalent. A checkout installed with
+the pip fallback can retain the legacy launch path with
+`python3 bb-ripper/` or `cd bb-ripper && python3 .`.
 
 ### Running the docker image
 
@@ -77,7 +119,10 @@ docker run --env-file dockenv -v "$(pwd)/data:/data" --rm -it jvrck/bbripper:lat
 
 ### Building and running the docker image
 
-To build the docker image
+The Dockerfile uses BuildKit features. BuildKit is enabled by default in
+current Docker and Docker Buildx releases.
+
+To build the docker image:
 
 ```bash
 docker build --no-cache -t ripper .

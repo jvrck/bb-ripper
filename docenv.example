@@ -6,3 +6,6 @@ BB_RIPPER_EXPORT_DIRECTORY=/path/to/output
 
 # Optional: limit the number of repositories for a test run.
 # BB_TEST_COUNTER=5
+
+# Optional: organize repositories by Bitbucket project (default: false).
+# BB_USE_PROJECT_FOLDERS=true
