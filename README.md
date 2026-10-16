@@ -57,20 +57,21 @@ project when the same run contains repositories needing the fallback folder.
 
 ### Local Environment
 
-The application supports Python 3.12.
-
-Create the locked Python 3.12 development environment with uv 0.12.24:
+The application supports Python 3.12. Install [uv](https://docs.astral.sh/uv/)
+first, then use the pinned uv 0.12.24 to create the locked development
+environment:
 
 ```bash
-uv sync --locked
+uvx uv@0.12.24 sync --locked
 ```
 
 `pyproject.toml` and `uv.lock` are authoritative. `requirements.txt` is a
 generated, hashed runtime-only fallback for environments that do not use uv.
-To use that fallback in a Python 3.12 virtual environment:
+To use that fallback, create a Python 3.12 virtual environment with the same
+pinned uv, then install the runtime dependencies:
 
 ```bash
-python3.12 -m venv .venv
+uvx uv@0.12.24 venv --seed --python 3.12 .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
@@ -90,11 +91,11 @@ source env_setup.sh
 Run the installed command through the locked environment:
 
 ```bash
-uv run --locked bb-ripper
+uvx uv@0.12.24 run --locked bb-ripper
 ```
 
-`uv run --locked python -m bb_ripper` is equivalent. A checkout installed
-with the pip fallback can retain the legacy launch path with
+`uvx uv@0.12.24 run --locked python -m bb_ripper` is equivalent. A checkout
+installed with the pip fallback can retain the legacy launch path with
 `python3 bb-ripper/` or `cd bb-ripper && python3 .`.
 
 ### Running the docker image

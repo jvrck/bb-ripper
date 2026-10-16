@@ -10,18 +10,19 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 ## Development commands
 
 ```bash
-uv sync --locked
-uv run --locked python -m unittest discover -v
-uv run --locked pylint src/bb_ripper bb-ripper scripts
-uv run --locked pip-audit -r requirements.txt
-uv build
+uvx uv@0.12.24 sync --locked
+uvx uv@0.12.24 run --locked python -m unittest discover -v
+uvx uv@0.12.24 run --locked pylint src/bb_ripper bb-ripper scripts
+uvx uv@0.12.24 run --locked pip-audit -r requirements.txt
+uvx uv@0.12.24 build
 ```
 
 For the supported pip fallback, create and activate a Python 3.12 virtual
-environment, run `python -m pip install -r requirements.txt`, and use
+environment with `uvx uv@0.12.24 venv --seed --python 3.12 .venv` and `source
+.venv/bin/activate`, run `python -m pip install -r requirements.txt`, and use
 `PYTHONPATH=src python -m unittest discover -v`. After dependency changes,
-regenerate the pip fallback with `scripts/export_requirements.sh` using the
-pinned uv 0.12.24.
+regenerate the pip fallback with `BBRIPPER_UV="uvx uv@0.12.24"
+scripts/export_requirements.sh`.
 
 Build both supported image variants with:
 
