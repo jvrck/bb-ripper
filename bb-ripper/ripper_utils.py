@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from shutil import which
 
-from auth_helper import GIT_USERNAME, get_git_https_url, use_project_folders
+from auth_helper import GIT_USERNAME, get_git_https_url
 
 _SAFE_COMPONENT_CHARACTERS = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
@@ -75,12 +75,11 @@ def _validate_repository_slug(slug):
 def _repository_project_key(repo):
     """Return a repository's project key and whether it is a fallback."""
     project = getattr(repo, "project", None)
-    if not isinstance(project, dict) or not project:
+    if project is None:
         return _UNASSIGNED_PROJECT, True
-
+    if not isinstance(project, dict):
+        raise BackupError("Bitbucket returned an unsafe project key")
     key = project.get("key")
-    if key is None or key == "":
-        return _UNASSIGNED_PROJECT, True
     return _validate_component(key, "project key"), False
 
 
@@ -122,15 +121,14 @@ def _grouped_repository_path(repo, project_keys, project_state):
 
 
 def plan_repo_destinations(
-        repositories, backup_directory, project_folders=None):
+        repositories, backup_directory, project_folders=False):
     """Validate all repository destinations and reject collisions up front."""
-    grouped = use_project_folders() if project_folders is None else project_folders
     planned = []
     destinations = set()
     project_keys = {}
     project_state = {"fallback": False, "real_unassigned": False}
     for repo in repositories:
-        if grouped:
+        if project_folders:
             relative_path = _grouped_repository_path(
                 repo, project_keys, project_state
             )
@@ -161,7 +159,9 @@ def _validated_repository_path(repo, repository_path):
     else:
         expected_path = None
     if relative_path != expected_path:
-        raise BackupError("Repository destination does not match its slug")
+        raise BackupError(
+            "Repository destination does not match its project and slug"
+        )
     return relative_path
 
 

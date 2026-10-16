@@ -249,13 +249,24 @@ class RipperUtilsTests(unittest.TestCase):
     def test_grouped_planning_uses_unassigned_fallbacks(self):
         destination = self.root / "project-planning"
         destination.mkdir()
-        unassigned_projects = (None, "invalid-shape", {}, {"key": None}, {"key": ""})
-        for index, project in enumerate(unassigned_projects):
-            repo = SimpleNamespace(name="Repo", slug=f"repo-{index}", project=project)
+        for index in range(3):
+            repo = SimpleNamespace(
+                name="Repo", slug=f"repo-{index}", project=None
+            )
             plan = plan_repo_destinations(
                 [repo], destination, project_folders=True
             )
             self.assertEqual(Path(f"UNASSIGNED/repo-{index}"), plan[0][1])
+
+    def test_planner_default_does_not_read_project_folder_environment(self):
+        destination = self.root / "explicit-flat-default"
+        destination.mkdir()
+        repo = SimpleNamespace(
+            name="Repo", slug="repo", project={"key": "TOOLS"}
+        )
+        with patch.dict(os.environ, {"BB_USE_PROJECT_FOLDERS": "true"}):
+            plan = plan_repo_destinations([repo], destination)
+        self.assertEqual(Path("repo"), plan[0][1])
 
     def test_project_keys_are_ignored_in_flat_mode(self):
         destination = self.root / "flat-project-metadata"
@@ -353,6 +364,21 @@ class RipperUtilsTests(unittest.TestCase):
         with self.assertRaisesRegex(BackupError, "does not match"):
             clone_repo(repo, destination, Path("OTHER/repo"))
         self.assertEqual([], list(destination.iterdir()))
+
+    def test_clone_rejects_project_folder_symlink_outside_backup(self):
+        destination = self.root / "project-symlink"
+        destination.mkdir()
+        outside = self.root / "outside-project"
+        outside.mkdir()
+        (destination / "TOOLS").symlink_to(outside, target_is_directory=True)
+        repo = SimpleNamespace(
+            name="Repo", slug="repo", project={"key": "TOOLS"},
+            https=self.fixture.url,
+        )
+
+        with self.assertRaisesRegex(BackupError, "escapes"):
+            clone_repo(repo, destination, Path("TOOLS/repo"))
+        self.assertEqual([], list(outside.iterdir()))
 
     def test_clone_failure_is_nonzero_and_keeps_recoverable_directory(self):
         destination = self.root / "failed-backup"

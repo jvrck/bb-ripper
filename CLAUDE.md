@@ -48,6 +48,9 @@ variables are intentionally unsupported.
 - Repository display names are report-only. Repository slugs are validated as
   single path components, and all selected destinations are checked for
   containment and case-insensitive collisions before cloning begins.
+- The output directory is assumed to be exclusively owned by the backup
+  process. Concurrent local modification or symlink swapping is outside the
+  threat model; containment is re-checked after project folders are created.
 - Git, branch, API, and archive failures are terminal. Never turn these into a
   successful or partial backup result.
 - Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket
