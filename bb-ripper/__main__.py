@@ -1,53 +1,56 @@
-"""
-The main entrypoint for the application.
-"""
-import time
-import sys
+"""The main entry point for bb-ripper."""
+
 import os
-from ripper_utils import create_output_directory
+import sys
+import time
+
+from auth_helper import validate_environment
+from bbhelper import BBRepo
+from ripper_utils import BackupError
 from ripper_utils import check_git
 from ripper_utils import clone_repo
-from ripper_utils import zip_output_dir
+from ripper_utils import create_output_directory
 from ripper_utils import delete_output_directory
-from bbhelper import BBRepo
+from ripper_utils import zip_output_dir
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/bb-ripper'
-sys.path.insert(0, BASE)
 
-start_time = time.time()
+def run_backup():
+    """Run one complete workspace backup, returning the archive path."""
+    validate_environment()
+    if check_git() is None:
+        raise BackupError("Git is not installed")
 
-if check_git() is not None:
-    output_dir = create_output_directory()
-    print(output_dir)
+    output_directory = create_output_directory()
+    workspace_repos = BBRepo.GetWorkspaceRepos(os.environ["BB_WORKSPACE"])
+    test_counter = os.environ.get("BB_TEST_COUNTER")
+    limit = int(test_counter) if test_counter and test_counter.isdigit() else None
+    if limit is not None and limit < 1:
+        limit = None
 
-    # # Get all repos in workspace
-    workspace_repos = BBRepo.GetWorkspaceRepos(os.environ['BB_WORKSPACE'])
+    for counter, repo in enumerate(workspace_repos, start=1):
+        print(f"Backing up repository: {repo.name}")
+        clone_repo(repo, output_directory)
+        if limit is not None and counter == limit:
+            break
 
-    COUNTER = 0
-    test_counter = os.environ.get('BB_TEST_COUNTER')
+    archive_path = zip_output_dir(output_directory)
+    delete_output_directory(output_directory)
+    return archive_path
 
-    for repo in workspace_repos:
-        print('================')
-        print(repo.https)
-        print('================')
 
-        clone_repo(repo, output_dir)
+def main():
+    """Validate, run the backup, and report a safe terminal status."""
+    start_time = time.time()
+    try:
+        archive_path = run_backup()
+    except Exception as error:  # pylint: disable=broad-exception-caught
+        print(f"Backup failed: {error}", file=sys.stderr)
+        return 1
 
-        COUNTER += 1
+    print(f"Backup complete: {archive_path}")
+    print(f"Elapsed time: {time.time() - start_time:.2f} seconds")
+    return 0
 
-        # test that test_counter is present
-        if test_counter is not None:
-            # test test_counter is a valid integer
-            if test_counter.isdigit():
-                # test for valid test_counter > 0 and counter is equal to test_counter
-                if (int(test_counter) == COUNTER) and (int(test_counter) > 0):
-                    break
 
-    zip_output_dir()
-    delete_output_directory()
-
-else:
-    print('git is not installed...Exiting')
-
-print("--- COMPLETE ---")
-print(f"--- {(time.time() - start_time)} seconds ---")
+if __name__ == "__main__":
+    sys.exit(main())

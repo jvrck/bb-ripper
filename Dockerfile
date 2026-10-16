@@ -1,5 +1,6 @@
 FROM python:3.12-slim-bookworm
-ARG AWSCLI=FALSE 
+ARG AWSCLI=FALSE
+ARG TARGETARCH
 
 WORKDIR /ripper
 
@@ -14,4 +15,4 @@ VOLUME /data
 
 ENV BB_RIPPER_EXPORT_DIRECTORY=/data/
 
-CMD python3 .
+CMD ["python3", "."]

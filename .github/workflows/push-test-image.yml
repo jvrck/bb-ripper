@@ -1,87 +1,58 @@
 name: Test Docker Image Workflow
+
 env:
   DOCKER_BUILD_RECORD_UPLOAD: "false"
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - '*'
   push:
     branches:
-      - 'release-*'
-      - '*-release'
-      - 'release/*'
+      - "release-*"
+      - "*-release"
+      - "release/*"
 
 permissions:
   contents: read
 
 jobs:
-  build-and-run-images:
+  build-and-smoke-test:
+    name: Build and smoke test (${{ matrix.variant }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - variant: standard
+            awscli: "FALSE"
+            image: ghcr.io/jvrck/bbripper:ci-standard
+          - variant: aws
+            awscli: "TRUE"
+            image: ghcr.io/jvrck/bbripper:ci-aws
     steps:
-      - name: Check out repo
-        uses: actions/checkout@main
-        
-      - name: Build and Docker image
-        uses: docker/build-push-action@master
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build image without publishing
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           platforms: linux/amd64
           file: ./Dockerfile
+          build-args: AWSCLI=${{ matrix.awscli }}
+          load: true
           push: false
-          tags: |
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}
-
-      - name: Run Docker image
-        run: |
-          docker run \
-            -e BB_USER=$BB_USER \
-            -e BB_WORKSPACE=$BB_WORKSPACE \
-            -e BB_PASSWORD=$BB_PASSWORD \
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}
+          tags: ${{ matrix.image }}
+      - name: Verify fail-closed configuration validation
         env:
-          BB_USER: ${{ secrets.BB_USER }}
-          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
-          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
-
-  build-and-run-aws-images:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@main
-        
-      - name: Build and Docker image
-        uses: docker/build-push-action@master
-        with:
-          context: .
-          platforms: linux/amd64
-          file: ./Dockerfile
-          build-args: AWSCLI=TRUE
-          push: false
-          tags: |
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
-
-      - name: Run Docker image
+          IMAGE: ${{ matrix.image }}
         run: |
-          docker run \
-            -e BB_USER=$BB_USER \
-            -e BB_WORKSPACE=$BB_WORKSPACE \
-            -e BB_PASSWORD=$BB_PASSWORD \
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws
+          if docker run --rm "$IMAGE" >container-output.txt 2>&1; then
+            echo "Container unexpectedly succeeded without required settings"
+            exit 1
+          fi
+          grep -q "Missing required environment variables" container-output.txt
+      - name: Verify AWS CLI
+        if: matrix.variant == 'aws'
         env:
-          BB_USER: ${{ secrets.BB_USER }}
-          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
-          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
-
-      - name: Run Docker image - Check AWS CLI
-        run: |
-          docker run \
-            ghcr.io/jvrck/bbripper:${{ github.run_id }}-aws aws --version
-        env:
-          BB_USER: ${{ secrets.BB_USER }}
-          BB_WORKSPACE: ${{ secrets.BB_WORKSPACE }}
-          BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
+          IMAGE: ${{ matrix.image }}
+        run: docker run --rm "$IMAGE" aws --version
