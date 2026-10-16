@@ -59,7 +59,8 @@ jobs:
 
           for artifact in dist/*.whl dist/*.tar.gz; do
             environment="$(mktemp -d)"
-            python -m venv "$environment"
+            python3.12 -c 'import sys; assert sys.version_info[:2] == (3, 12)'
+            python3.12 -m venv "$environment"
             "$environment/bin/python" -m pip install -r requirements.txt
             "$environment/bin/python" -m pip install --no-deps "$artifact"
             assert_fail_closed "$environment/bin/bb-ripper"

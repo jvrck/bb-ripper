@@ -22,6 +22,13 @@ scripts/export_requirements.sh /tmp/requirements.txt
 diff -u requirements.txt /tmp/requirements.txt
 ```
 
+The export script rejects any uv version other than 0.12.24. If the pinned uv
+is not your default executable, run it through uvx:
+
+```bash
+BBRIPPER_UV="uvx uv@0.12.24" scripts/export_requirements.sh
+```
+
 Dependabot manages the uv project and updates `uv.lock`; its pull requests must
 also regenerate `requirements.txt`. CI rejects export drift.
 

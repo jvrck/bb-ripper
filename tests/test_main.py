@@ -2,6 +2,7 @@
 
 import importlib.util
 import os
+import sys
 import tempfile
 import tomllib
 import unittest
@@ -143,7 +144,8 @@ class MainTests(unittest.TestCase):
 
     def test_compatibility_launcher_delegates_to_package_main(self):
         launcher_path = ROOT / "bb-ripper" / "__main__.py"
-        with patch("bb_ripper.__main__.main", return_value=17) as package_main:
+        with patch("bb_ripper.__main__.main", return_value=17) as package_main, \
+                patch.object(sys, "path", list(sys.path)):
             specification = importlib.util.spec_from_file_location(
                 "bbripper_compatibility_launcher", launcher_path
             )
@@ -155,7 +157,6 @@ class MainTests(unittest.TestCase):
     def test_package_version_matches_project_metadata(self):
         with (ROOT / "pyproject.toml").open("rb") as project_file:
             project_version = tomllib.load(project_file)["project"]["version"]
-        self.assertEqual("1.3.0", __version__)
         self.assertEqual(project_version, __version__)
 
 

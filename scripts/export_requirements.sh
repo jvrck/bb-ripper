@@ -5,7 +5,22 @@ destination="${1:-requirements.txt}"
 temporary="$(mktemp)"
 trap 'rm -f "$temporary"' EXIT
 
-uv export \
+read -r -a uv_command <<< "${BBRIPPER_UV:-uv}"
+if ! uv_version="$("${uv_command[@]}" --version 2>/dev/null)"; then
+    printf '%s\n' \
+        "error: requirements export requires uv 0.12.24; unable to run ${uv_command[*]}" \
+        >&2
+    exit 1
+fi
+if [[ ! "$uv_version" =~ ^uv\ 0\.12\.24(\ |$) ]]; then
+    printf '%s\n' \
+        "error: requirements export requires uv 0.12.24; found $uv_version" \
+        "run with BBRIPPER_UV='uvx uv@0.12.24' scripts/export_requirements.sh" \
+        >&2
+    exit 1
+fi
+
+"${uv_command[@]}" export \
     --locked \
     --format requirements-txt \
     --no-dev \
