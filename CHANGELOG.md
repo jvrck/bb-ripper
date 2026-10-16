@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add a packaged `bb_ripper` application with console, module, and compatible
+  source launch entry points.
+- Add an authoritative `pyproject.toml` and `uv.lock`, including locked build
+  and development tooling and clean wheel/source-distribution checks.
 - Add opt-in `BB_USE_PROJECT_FOLDERS` layout using project keys and an
   `UNASSIGNED` fallback, with fail-closed ambiguity and path validation.
 - Add linux/amd64 and linux/arm64 image build smoke coverage for pull requests
@@ -16,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Generate the hashed runtime-only `requirements.txt` fallback from `uv.lock`
+  and update Dependabot to manage the uv project.
+- Build and install a non-editable wheel in container images while preserving
+  `/ripper`, the default command, and standard/AWS variants. Python locking
+  does not make OS packages or container images bit-for-bit reproducible.
 - Repository directories now use Bitbucket repository slugs instead of display
   names, changing on-disk and archive paths when those values differ.
 - Pin uv for dependency installation in CI and container builds while retaining

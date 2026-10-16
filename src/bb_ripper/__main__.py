@@ -4,15 +4,15 @@ import os
 import sys
 import time
 
-from auth_helper import use_project_folders, validate_environment
-from bbhelper import BBRepo
-from ripper_utils import BackupError
-from ripper_utils import check_git
-from ripper_utils import clone_repo
-from ripper_utils import create_output_directory
-from ripper_utils import delete_output_directory
-from ripper_utils import plan_repo_destinations
-from ripper_utils import zip_output_dir
+from .auth_helper import use_project_folders, validate_environment
+from .bbhelper import BBRepo
+from .ripper_utils import BackupError
+from .ripper_utils import check_git
+from .ripper_utils import clone_repo
+from .ripper_utils import create_output_directory
+from .ripper_utils import delete_output_directory
+from .ripper_utils import plan_repo_destinations
+from .ripper_utils import zip_output_dir
 
 
 def run_backup():

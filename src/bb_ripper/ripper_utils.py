@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from shutil import which
 
-from auth_helper import GIT_USERNAME, get_git_https_url
+from .auth_helper import GIT_USERNAME, get_git_https_url
 
 _SAFE_COMPONENT_CHARACTERS = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"

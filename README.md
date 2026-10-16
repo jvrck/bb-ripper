@@ -59,14 +59,15 @@ project when the same run contains repositories needing the fallback folder.
 
 The application supports Python 3.12.
 
-Create a Python 3.12 virtual environment and install dependencies with uv:
+Create the locked Python 3.12 development environment with uv 0.12.24:
 
 ```bash
-uv venv -p 3.12 && uv pip install -r requirements.txt
-source .venv/bin/activate
+uv sync --locked
 ```
 
-Alternatively, use pip in a Python 3.12 virtual environment:
+`pyproject.toml` and `uv.lock` are authoritative. `requirements.txt` is a
+generated, hashed runtime-only fallback for environments that do not use uv.
+To use that fallback in a Python 3.12 virtual environment:
 
 ```bash
 python3.12 -m venv .venv
@@ -86,12 +87,15 @@ source env_setup.sh
 
 ### Run
 
-To run the application
+Run the installed command through the locked environment:
 
 ```bash
-cd bb-ripper
-python3 .
+uv run --locked bb-ripper
 ```
+
+`uv run --locked python -m bb_ripper` is equivalent. A checkout installed
+with the pip fallback can retain the legacy launch path with
+`python3 bb-ripper/` or `cd bb-ripper && python3 .`.
 
 ### Running the docker image
 

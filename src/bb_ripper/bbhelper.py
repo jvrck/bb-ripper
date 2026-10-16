@@ -6,7 +6,7 @@ from urllib.parse import quote, urlsplit
 
 import requests
 
-from auth_helper import get_api_auth
+from .auth_helper import get_api_auth
 
 BB_API_ENDPOINT = "https://api.bitbucket.org/2.0"
 BB_API_HOST = "api.bitbucket.org"

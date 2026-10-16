@@ -5,7 +5,6 @@ import functools
 import http.server
 import os
 import subprocess
-import sys
 import tarfile
 import tempfile
 import threading
@@ -14,12 +13,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "bb-ripper"))
-
-import auth_helper
-import ripper_utils
-from ripper_utils import (
+from bb_ripper import auth_helper
+from bb_ripper import ripper_utils
+from bb_ripper.ripper_utils import (
     BackupError,
     clone_repo,
     delete_output_directory,

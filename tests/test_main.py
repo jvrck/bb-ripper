@@ -2,20 +2,17 @@
 
 import importlib.util
 import os
-import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from bb_ripper import __version__
+from bb_ripper import __main__ as MAIN
+
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "bb-ripper"))
-SPEC = importlib.util.spec_from_file_location(
-    "bbripper_main", ROOT / "bb-ripper" / "__main__.py"
-)
-MAIN = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(MAIN)
 
 ENVIRONMENT = {
     "BB_EMAIL": "backup@example.test",
@@ -143,6 +140,23 @@ class MainTests(unittest.TestCase):
     def test_main_returns_nonzero_without_claiming_success(self):
         with patch.object(MAIN, "run_backup", side_effect=RuntimeError("failed")):
             self.assertEqual(1, MAIN.main())
+
+    def test_compatibility_launcher_delegates_to_package_main(self):
+        launcher_path = ROOT / "bb-ripper" / "__main__.py"
+        with patch("bb_ripper.__main__.main", return_value=17) as package_main:
+            specification = importlib.util.spec_from_file_location(
+                "bbripper_compatibility_launcher", launcher_path
+            )
+            launcher = importlib.util.module_from_spec(specification)
+            specification.loader.exec_module(launcher)
+            self.assertEqual(17, launcher.main())
+        package_main.assert_called_once_with()
+
+    def test_package_version_matches_project_metadata(self):
+        with (ROOT / "pyproject.toml").open("rb") as project_file:
+            project_version = tomllib.load(project_file)["project"]["version"]
+        self.assertEqual("1.3.0", __version__)
+        self.assertEqual(project_version, __version__)
 
 
 if __name__ == "__main__":
