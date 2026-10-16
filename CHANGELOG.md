@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add opt-in `BB_USE_PROJECT_FOLDERS` layout using project keys and an
+  `UNASSIGNED` fallback, with fail-closed ambiguity and path validation.
+
 ### Changed
 
 - Repository directories now use Bitbucket repository slugs instead of display

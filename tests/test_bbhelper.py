@@ -20,11 +20,10 @@ ENVIRONMENT = {
 MISSING = object()
 
 
-def repo_payload(name, slug=MISSING):
+def repo_payload(name, slug=MISSING, project=MISSING):
     """Build the minimum valid Bitbucket repository response."""
     payload = {
         "name": name,
-        "project": {"key": "TEST"},
         "links": {
             "clone": [
                 {"name": "https", "href": f"https://bitbucket.org/ws/{name}.git"},
@@ -32,6 +31,10 @@ def repo_payload(name, slug=MISSING):
             ]
         },
     }
+    if project is MISSING:
+        payload["project"] = {"key": "TEST"}
+    else:
+        payload["project"] = project
     if slug is MISSING:
         payload["slug"] = name
     elif slug is not None:
@@ -105,6 +108,20 @@ class BBHelperTests(unittest.TestCase):
 
         self.assertEqual("Tools/API", repos[0].name)
         self.assertEqual("tools-api", repos[0].slug)
+
+    def test_repository_tolerates_unassigned_project_shapes(self):
+        projects = (MISSING, None, "not-a-mapping", {}, {"key": None}, {"key": ""})
+        for project in projects:
+            with self.subTest(project=project):
+                payload = repo_payload("repo", project=project)
+                if project is MISSING:
+                    payload.pop("project")
+                repo = BBRepo(payload)
+                self.assertIsNone(repo.project)
+
+    def test_non_string_project_key_is_preserved_for_grouped_validation(self):
+        repo = BBRepo(repo_payload("repo", project={"key": 123}))
+        self.assertEqual({"key": 123}, repo.project)
 
     def test_missing_or_non_string_slug_is_rejected(self):
         invalid_payloads = (

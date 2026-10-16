@@ -104,7 +104,12 @@ class BBRepo:
         self.slug = data["slug"]
         if not isinstance(self.slug, str):
             raise TypeError("repository slug must be a string")
-        self.project = data["project"]
+        project = data.get("project")
+        project_key = project.get("key") if isinstance(project, dict) else None
+        if project_key is None or project_key == "":
+            self.project = None
+        else:
+            self.project = project
         clone_links = data["links"]["clone"]
         if not isinstance(clone_links, list):
             raise TypeError("clone links must be a list")

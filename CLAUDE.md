@@ -32,7 +32,9 @@ All four values are required and validated before backup work starts:
 - `BB_RIPPER_EXPORT_DIRECTORY`: destination for the completed archive.
 
 `BB_TEST_COUNTER` optionally limits the number of repositories. `LOGLEVEL`
-controls API logging. App-password variables are intentionally unsupported.
+controls API logging. `BB_USE_PROJECT_FOLDERS` optionally groups repository
+slugs under project keys (`true`/`false`, default `false`). App-password
+variables are intentionally unsupported.
 
 ## Architecture and safety invariants
 

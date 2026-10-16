@@ -35,6 +35,24 @@ creating a backup:
 
 `BB_TEST_COUNTER` Limit the number of repositories to process (useful for testing). All values that are non-integer or less than 1 will be ignored.
 
+`BB_USE_PROJECT_FOLDERS` Organize repositories by Bitbucket project key when
+set to `true` (default: `false`). Values are case-insensitive and may include
+surrounding whitespace; values other than `true` or `false` are rejected.
+Repository paths use slugs in either mode. For example:
+
+```text
+bbr-workspace-2026-03-05-T10.00.00/
+  TOOLS/
+    tools-api/
+  UNASSIGNED/
+    standalone-repo/
+```
+
+Repositories without a project key use the `UNASSIGNED` folder. To prevent
+ambiguous backups on case-insensitive filesystems, a real project key that
+differs from another only by case is rejected, as is a real `UNASSIGNED`
+project when the same run contains repositories needing the fallback folder.
+
 ## Running the ripper
 
 ### Local Environment

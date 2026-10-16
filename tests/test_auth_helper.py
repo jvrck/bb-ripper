@@ -9,7 +9,12 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "bb-ripper"))
 
-from auth_helper import get_api_auth, get_git_https_url, validate_environment
+from auth_helper import (
+    get_api_auth,
+    get_git_https_url,
+    use_project_folders,
+    validate_environment,
+)
 
 
 class AuthHelperTests(unittest.TestCase):
@@ -46,6 +51,38 @@ class AuthHelperTests(unittest.TestCase):
             ("backup@example.test", "synthetic-token"),
             get_api_auth(environment),
         )
+
+    def test_project_folder_setting_accepts_only_boolean_words(self):
+        valid_values = {
+            None: False,
+            "": False,
+            "false": False,
+            "FALSE": False,
+            " true ": True,
+        }
+        for value, expected in valid_values.items():
+            with self.subTest(value=value):
+                environment = {}
+                if value is not None:
+                    environment["BB_USE_PROJECT_FOLDERS"] = value
+                self.assertEqual(expected, use_project_folders(environment))
+
+    def test_invalid_project_folder_setting_fails_validation(self):
+        base_environment = {
+            "BB_EMAIL": "backup@example.test",
+            "BB_API_TOKEN": "synthetic-token",
+            "BB_WORKSPACE": "workspace",
+            "BB_RIPPER_EXPORT_DIRECTORY": "/tmp/export",
+        }
+        for value in ("yes", "1", "on"):
+            with self.subTest(value=value):
+                environment = {
+                    **base_environment,
+                    "BB_USE_PROJECT_FOLDERS": value,
+                }
+                with self.assertRaisesRegex(
+                        ValueError, "BB_USE_PROJECT_FOLDERS.*true or false"):
+                    validate_environment(environment)
 
     def test_workspace_slug_cannot_escape_output_directory(self):
         environment = {

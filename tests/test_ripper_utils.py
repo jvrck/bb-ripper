@@ -199,6 +199,161 @@ class RipperUtilsTests(unittest.TestCase):
         self.assertTrue((destination / "tools-api" / ".git").is_dir())
         self.assertTrue((destination / "tools-api-2" / ".git").is_dir())
 
+    def test_grouped_clone_and_archive_use_project_and_fallback_folders(self):
+        destination = self.root / "grouped"
+        destination.mkdir()
+        repos = [
+            SimpleNamespace(
+                name="Tools/API", slug="tools-api",
+                project={"key": "TOOLS"}, https=self.fixture.url,
+            ),
+            SimpleNamespace(
+                name="Web", slug="web", project={"key": "WEB"},
+                https=self.fixture.url,
+            ),
+            SimpleNamespace(
+                name="Loose", slug="loose", project=None,
+                https=self.fixture.url,
+            ),
+        ]
+
+        for repo, repository_path in plan_repo_destinations(
+                repos, destination, project_folders=True):
+            clone_repo(repo, destination, repository_path)
+
+        expected_paths = (
+            Path("TOOLS/tools-api"), Path("WEB/web"), Path("UNASSIGNED/loose")
+        )
+        for relative_path in expected_paths:
+            clone = destination / relative_path
+            self.assertTrue((clone / ".git").is_dir())
+            branches = run_git(
+                "branch", "--format=%(refname:short)", cwd=clone
+            ).stdout.splitlines()
+            self.assertIn("feature/test", branches)
+            self.assertEqual(
+                self.fixture.url,
+                run_git("remote", "get-url", "origin", cwd=clone).stdout.strip(),
+            )
+
+        archive_path = Path(zip_output_dir(destination))
+        with tarfile.open(archive_path, "r:gz") as archive:
+            member_names = [member.name for member in archive.getmembers()]
+            for relative_path in expected_paths:
+                prefix = f"{destination.name}/{relative_path.as_posix()}/"
+                self.assertTrue(any(name.startswith(prefix) for name in member_names))
+            for member in archive.getmembers():
+                if member.isfile():
+                    self.assertNotIn(TOKEN.encode(), archive.extractfile(member).read())
+
+    def test_grouped_planning_uses_unassigned_fallbacks(self):
+        destination = self.root / "project-planning"
+        destination.mkdir()
+        unassigned_projects = (None, "invalid-shape", {}, {"key": None}, {"key": ""})
+        for index, project in enumerate(unassigned_projects):
+            repo = SimpleNamespace(name="Repo", slug=f"repo-{index}", project=project)
+            plan = plan_repo_destinations(
+                [repo], destination, project_folders=True
+            )
+            self.assertEqual(Path(f"UNASSIGNED/repo-{index}"), plan[0][1])
+
+    def test_project_keys_are_ignored_in_flat_mode(self):
+        destination = self.root / "flat-project-metadata"
+        destination.mkdir()
+        projects = ({"key": 123}, {"key": "../unsafe"}, "odd-shape")
+        repos = [
+            SimpleNamespace(name="Repo", slug=f"repo-{index}", project=project)
+            for index, project in enumerate(projects)
+        ]
+        plan = plan_repo_destinations(repos, destination, project_folders=False)
+        self.assertEqual(
+            [Path("repo-0"), Path("repo-1"), Path("repo-2")],
+            [relative_path for _repo, relative_path in plan],
+        )
+
+    def test_grouped_planning_rejects_unsafe_project_keys_without_writes(self):
+        destination = self.root / "unsafe-projects"
+        destination.mkdir()
+        unsafe_keys = (123, "../x", "a/b", ".", "..", "nul\x00key", "a" * 256)
+        for project_key in unsafe_keys:
+            with self.subTest(project_key=project_key):
+                repo = SimpleNamespace(
+                    name="Repo", slug="repo", project={"key": project_key}
+                )
+                with self.assertRaisesRegex(BackupError, "unsafe project key"):
+                    plan_repo_destinations(
+                        [repo], destination, project_folders=True
+                    )
+                self.assertEqual([], list(destination.iterdir()))
+
+    def test_grouped_planning_rejects_ambiguous_project_keys(self):
+        destination = self.root / "ambiguous-projects"
+        destination.mkdir()
+        cases = (
+            (
+                [
+                    SimpleNamespace(name="One", slug="one", project=None),
+                    SimpleNamespace(
+                        name="Two", slug="two", project={"key": "unassigned"}
+                    ),
+                ],
+                "conflicts",
+            ),
+            (
+                [
+                    SimpleNamespace(
+                        name="One", slug="one", project={"key": "TOOLS"}
+                    ),
+                    SimpleNamespace(
+                        name="Two", slug="two", project={"key": "tools"}
+                    ),
+                ],
+                "case-insensitive key collisions",
+            ),
+        )
+        for repos, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(BackupError, message):
+                    plan_repo_destinations(
+                        repos, destination, project_folders=True
+                    )
+                self.assertEqual([], list(destination.iterdir()))
+
+    def test_real_unassigned_project_without_fallback_is_allowed(self):
+        destination = self.root / "real-unassigned"
+        destination.mkdir()
+        repo = SimpleNamespace(
+            name="Repo", slug="repo", project={"key": "UNASSIGNED"}
+        )
+        plan = plan_repo_destinations([repo], destination, project_folders=True)
+        self.assertEqual(Path("UNASSIGNED/repo"), plan[0][1])
+
+    def test_grouped_full_destination_collisions_are_rejected(self):
+        destination = self.root / "grouped-duplicates"
+        destination.mkdir()
+        repos = [
+            SimpleNamespace(
+                name="One", slug="Repo", project={"key": "TOOLS"}
+            ),
+            SimpleNamespace(
+                name="Two", slug="repo", project={"key": "TOOLS"}
+            ),
+        ]
+        with self.assertRaisesRegex(BackupError, "duplicate destinations"):
+            plan_repo_destinations(repos, destination, project_folders=True)
+        self.assertEqual([], list(destination.iterdir()))
+
+    def test_clone_rejects_grouped_path_that_does_not_match_project(self):
+        destination = self.root / "project-mismatch"
+        destination.mkdir()
+        repo = SimpleNamespace(
+            name="Repo", slug="repo", project={"key": "TOOLS"},
+            https=self.fixture.url,
+        )
+        with self.assertRaisesRegex(BackupError, "does not match"):
+            clone_repo(repo, destination, Path("OTHER/repo"))
+        self.assertEqual([], list(destination.iterdir()))
+
     def test_clone_failure_is_nonzero_and_keeps_recoverable_directory(self):
         destination = self.root / "failed-backup"
         destination.mkdir()
@@ -278,6 +433,16 @@ class RipperUtilsTests(unittest.TestCase):
 
         with self.assertRaisesRegex(BackupError, "escapes"):
             plan_repo_destinations([repo], destination)
+
+    def test_destination_resolution_errors_fail_closed(self):
+        destination = self.root / "resolution-error"
+        destination.mkdir()
+        repo = SimpleNamespace(name="Repo", slug="repo")
+        with patch.object(
+                ripper_utils.Path, "resolve", side_effect=OSError("denied")):
+            with self.assertRaisesRegex(BackupError, "resolve.*safely"):
+                plan_repo_destinations([repo], destination)
+        self.assertEqual([], list(destination.iterdir()))
 
     def test_archive_failure_keeps_source_and_removes_partial_archive(self):
         source = self.root / "archive-failure"
