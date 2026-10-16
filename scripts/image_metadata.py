@@ -13,7 +13,10 @@ def image_metadata(event_name, ref, variant):
     suffix = "-aws" if variant == "aws" else ""
     tag_event = event_name == "push" and ref.startswith("refs/tags/")
     version = ref.removeprefix("refs/tags/") if tag_event else None
-    if version and not DOCKER_TAG.fullmatch(version):
+    if version and (
+            not DOCKER_TAG.fullmatch(version)
+            or not DOCKER_TAG.fullmatch(f"{version}-aws")
+    ):
         raise ValueError("Git tag cannot be represented as a Docker tag")
 
     push = tag_event or event_name == "schedule" or (

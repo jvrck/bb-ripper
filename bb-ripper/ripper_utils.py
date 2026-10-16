@@ -2,7 +2,6 @@
 
 import os
 import shutil
-import stat
 import subprocess
 import tarfile
 import tempfile
@@ -12,16 +11,11 @@ from shutil import which
 
 from auth_helper import GIT_USERNAME, get_git_https_url
 
-output_dir = ""
-output_base = ""
-
-_ASKPASS_SCRIPT = """#!/bin/sh
-case "$1" in
-  *Username*) printf '%s\\n' "$BB_GIT_USERNAME" ;;
-  *Password*) printf '%s\\n' "$BB_API_TOKEN" ;;
-  *) exit 1 ;;
-esac
-"""
+_CREDENTIAL_HELPER = (
+    "!f() { if [ \"$1\" = get ]; then "
+    "printf '%s\\n' \"username=$BB_GIT_USERNAME\" "
+    "\"password=$BB_API_TOKEN\"; fi; }; f"
+)
 
 
 class BackupError(RuntimeError):
@@ -30,7 +24,6 @@ class BackupError(RuntimeError):
 
 def create_output_directory():
     """Create and return a unique output directory."""
-    global output_base, output_dir
     output_base = str(Path(os.environ["BB_RIPPER_EXPORT_DIRECTORY"]).resolve())
     Path(output_base).mkdir(parents=True, exist_ok=True)
 
@@ -41,13 +34,12 @@ def create_output_directory():
     except OSError as error:
         raise BackupError("Unable to create a unique backup directory") from error
 
-    output_dir = str(destination)
-    return output_dir
+    return str(destination)
 
 
-def delete_output_directory(directory=None):
+def delete_output_directory(directory):
     """Delete a completed backup's temporary source directory."""
-    target = Path(directory or output_dir)
+    target = Path(directory)
     if target.exists():
         shutil.rmtree(target)
 
@@ -68,7 +60,7 @@ def _validate_repo_name(name):
         raise BackupError("Bitbucket returned an unsafe repository name")
 
 
-def _git_clone_environment(askpass_path):
+def _git_clone_environment():
     environment = os.environ.copy()
     for name in ("BB_EMAIL", "BB_USER", "BB_PASSWORD"):
         environment.pop(name, None)
@@ -77,15 +69,17 @@ def _git_clone_environment(askpass_path):
             environment.pop(name)
     environment.update({
         "BB_GIT_USERNAME": GIT_USERNAME,
-        "GIT_ASKPASS": str(askpass_path),
-        "GIT_ASKPASS_REQUIRE": "force",
         "GIT_TERMINAL_PROMPT": "0",
         "LC_ALL": "C",
-        "GIT_CONFIG_COUNT": "2",
+        "GIT_CONFIG_COUNT": "4",
         "GIT_CONFIG_KEY_0": "http.followRedirects",
         "GIT_CONFIG_VALUE_0": "false",
         "GIT_CONFIG_KEY_1": "credential.helper",
         "GIT_CONFIG_VALUE_1": "",
+        "GIT_CONFIG_KEY_2": "credential.helper",
+        "GIT_CONFIG_VALUE_2": _CREDENTIAL_HELPER,
+        "GIT_CONFIG_KEY_3": "credential.useHttpPath",
+        "GIT_CONFIG_VALUE_3": "true",
     })
     return environment
 
@@ -115,17 +109,13 @@ def clone_repo(repo, destination):
         raise BackupError(f"Unable to create backup directory for {repo.name}") from error
 
     try:
-        with tempfile.TemporaryDirectory(prefix="bbr-askpass-") as temporary:
-            askpass_path = Path(temporary) / "askpass.sh"
-            askpass_path.write_text(_ASKPASS_SCRIPT, encoding="utf-8")
-            askpass_path.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            _run_git(
-                ["clone", "--", clean_url, "."],
-                cwd=clone_dir,
-                env=_git_clone_environment(askpass_path),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-            )
+        _run_git(
+            ["clone", "--", clean_url, "."],
+            cwd=clone_dir,
+            env=_git_clone_environment(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
 
         branches = _run_git(
             [
@@ -152,7 +142,11 @@ def clone_repo(repo, destination):
             if exists.returncode != 1:
                 raise BackupError(f"Unable to inspect branches for {repo.name}")
             _run_git(
-                ["branch", "--track", branch, f"refs/remotes/origin/{branch}"],
+                [
+                    "update-ref",
+                    f"refs/heads/{branch}",
+                    f"refs/remotes/origin/{branch}",
+                ],
                 cwd=clone_dir,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
@@ -161,9 +155,9 @@ def clone_repo(repo, destination):
         raise BackupError(f"Git backup failed for {repo.name}") from error
 
 
-def zip_output_dir(directory=None):
+def zip_output_dir(directory):
     """Create, verify, and atomically finalize a compressed tar archive."""
-    source = Path(directory or output_dir).resolve()
+    source = Path(directory).resolve()
     if not source.is_dir():
         raise BackupError("Backup source directory does not exist")
 
@@ -183,6 +177,9 @@ def zip_output_dir(directory=None):
             members = archive.getmembers()
             if not members or members[0].name != source.name:
                 raise BackupError("Backup archive verification failed")
+        current_umask = os.umask(0)
+        os.umask(current_umask)
+        temporary_path.chmod(0o666 & ~current_umask)
         os.replace(temporary_path, archive_path)
     except (OSError, tarfile.TarError) as error:
         temporary_path.unlink(missing_ok=True)

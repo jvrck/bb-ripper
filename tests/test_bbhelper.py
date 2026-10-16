@@ -6,8 +6,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import requests
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "bb-ripper"))
 
@@ -38,14 +36,9 @@ def repo_payload(name):
 class FakeResponse:
     """Minimal requests response fixture."""
 
-    def __init__(self, payload=None, error=None, status_code=200):
+    def __init__(self, payload=None, status_code=200):
         self.payload = payload
-        self.error = error
         self.status_code = status_code
-
-    def raise_for_status(self):
-        if self.error:
-            raise self.error
 
     def json(self):
         return self.payload
@@ -92,16 +85,17 @@ class BBHelperTests(unittest.TestCase):
         self.assertEqual(["one", "two"], [repo.name for repo in repos])
         self.assertEqual(REQUEST_TIMEOUT, session.calls[0][1])
         self.assertFalse(session.calls[0][2])
+        self.assertIn("pagelen=100", session.calls[0][0])
         self.assertEqual(
             ("backup@example.test", "synthetic-token"), session.auth
         )
 
     def test_http_failure_is_closed(self):
         session = FakeSession([
-            FakeResponse(error=requests.HTTPError("synthetic 500"))
+            FakeResponse({"values": []}, status_code=500)
         ])
         with patch("bbhelper.requests.Session", return_value=session):
-            with self.assertRaisesRegex(BitbucketAPIError, "request failed"):
+            with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
 
     def test_redirect_is_not_followed(self):
@@ -111,7 +105,7 @@ class BBHelperTests(unittest.TestCase):
             )
         ])
         with patch("bbhelper.requests.Session", return_value=session):
-            with self.assertRaisesRegex(BitbucketAPIError, "request failed"):
+            with self.assertRaisesRegex(BitbucketAPIError, "non-success status"):
                 BBRepo.GetWorkspaceRepos("workspace")
         self.assertEqual(1, len(session.calls))
 
@@ -122,7 +116,9 @@ class BBHelperTests(unittest.TestCase):
                 BBRepo.GetWorkspaceRepos("workspace")
 
     def test_pagination_loop_is_rejected(self):
-        first_url = "https://api.bitbucket.org/2.0/repositories/workspace"
+        first_url = (
+            "https://api.bitbucket.org/2.0/repositories/workspace?pagelen=100"
+        )
         session = FakeSession([
             FakeResponse({"values": [], "next": first_url}),
         ])

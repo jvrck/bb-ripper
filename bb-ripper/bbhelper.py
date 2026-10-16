@@ -38,12 +38,14 @@ def _page_values(session, request_endpoint):
         response = session.get(
             request_endpoint, timeout=REQUEST_TIMEOUT, allow_redirects=False
         )
-        if not 200 <= response.status_code < 300:
-            raise requests.HTTPError("Bitbucket API returned a non-success status")
-        response.raise_for_status()
-        payload = response.json()
-    except (requests.RequestException, ValueError) as error:
+    except requests.RequestException as error:
         raise BitbucketAPIError("Bitbucket API request failed") from error
+    if not 200 <= response.status_code < 300:
+        raise BitbucketAPIError("Bitbucket API returned a non-success status")
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise BitbucketAPIError("Bitbucket API returned invalid JSON") from error
 
     if not isinstance(payload, dict) or not isinstance(payload.get("values"), list):
         raise BitbucketAPIError("Bitbucket API response is missing a values list")
@@ -55,7 +57,7 @@ def _page_values(session, request_endpoint):
 
 
 def _get_paginated(path, factory):
-    request_endpoint = f"{BB_API_ENDPOINT}/{path}"
+    request_endpoint = f"{BB_API_ENDPOINT}/{path}?pagelen=100"
     visited = set()
     results = []
 

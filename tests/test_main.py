@@ -38,7 +38,8 @@ class MainTests(unittest.TestCase):
         delete.assert_not_called()
 
     def test_verified_archive_is_followed_by_source_cleanup(self):
-        with patch.dict(os.environ, ENVIRONMENT, clear=True), \
+        environment = {**ENVIRONMENT, "BB_TEST_COUNTER": "²"}
+        with patch.dict(os.environ, environment, clear=True), \
                 patch.object(MAIN, "check_git", return_value="/usr/bin/git"), \
                 patch.object(MAIN, "create_output_directory", return_value="/tmp/source"), \
                 patch.object(MAIN.BBRepo, "GetWorkspaceRepos", return_value=[]), \

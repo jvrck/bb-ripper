@@ -20,12 +20,16 @@ def run_backup():
     if check_git() is None:
         raise BackupError("Git is not installed")
 
-    output_directory = create_output_directory()
-    workspace_repos = BBRepo.GetWorkspaceRepos(os.environ["BB_WORKSPACE"])
     test_counter = os.environ.get("BB_TEST_COUNTER")
-    limit = int(test_counter) if test_counter and test_counter.isdigit() else None
+    try:
+        limit = int(test_counter) if test_counter is not None else None
+    except ValueError:
+        limit = None
     if limit is not None and limit < 1:
         limit = None
+
+    output_directory = create_output_directory()
+    workspace_repos = BBRepo.GetWorkspaceRepos(os.environ["BB_WORKSPACE"])
 
     for counter, repo in enumerate(workspace_repos, start=1):
         print(f"Backing up repository: {repo.name}")

@@ -44,6 +44,15 @@ class ImageMetadataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Docker tag"):
             image_metadata("push", "refs/tags/release/2.0.0", "standard")
 
+    def test_tag_reserves_space_for_aws_suffix_in_both_jobs(self):
+        overlong_with_aws_suffix = "a" * 125
+        for variant in ("standard", "aws"):
+            with self.subTest(variant=variant):
+                with self.assertRaisesRegex(ValueError, "Docker tag"):
+                    image_metadata(
+                        "push", f"refs/tags/{overlong_with_aws_suffix}", variant
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

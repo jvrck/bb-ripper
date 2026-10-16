@@ -40,9 +40,9 @@ controls API logging. App-password variables are intentionally unsupported.
   and deletes temporary source only after an archive is created and verified.
 - `bb-ripper/bbhelper.py` performs bounded REST requests with status, shape,
   timeout, and same-origin pagination checks.
-- `bb-ripper/ripper_utils.py` clones without a shell. A temporary askpass
-  helper exposes the API token only to the clone process; persisted origins
-  and archives must remain credential-free.
+- `bb-ripper/ripper_utils.py` clones without shell interpolation. A
+  process-local Git credential helper exposes the API token only to the clone
+  process; persisted origins and archives must remain credential-free.
 - Git, branch, API, and archive failures are terminal. Never turn these into a
   successful or partial backup result.
 - Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket

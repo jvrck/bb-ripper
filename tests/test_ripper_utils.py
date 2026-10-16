@@ -19,7 +19,12 @@ sys.path.insert(0, str(ROOT / "bb-ripper"))
 
 import auth_helper
 import ripper_utils
-from ripper_utils import BackupError, clone_repo, zip_output_dir
+from ripper_utils import (
+    BackupError,
+    clone_repo,
+    delete_output_directory,
+    zip_output_dir,
+)
 
 TOKEN = "synthetic-token-that-must-not-persist"
 USERNAME = "x-bitbucket-api-token-auth"
@@ -91,6 +96,7 @@ class GitFixture:
         run_git("commit", "-m", "fixture", cwd=work)
         run_git("branch", "feature/test", cwd=work)
         run_git("branch", "test", cwd=work)
+        run_git("update-ref", "refs/heads/-leading", "HEAD", cwd=work)
         run_git("init", "--bare", str(self.bare), cwd=self.root)
         run_git("remote", "add", "origin", str(self.bare), cwd=work)
         run_git("push", "--all", "origin", cwd=work)
@@ -148,6 +154,7 @@ class RipperUtilsTests(unittest.TestCase):
         self.assertEqual(self.fixture.url, origin)
         self.assertIn("feature/test", branches.splitlines())
         self.assertIn("test", branches.splitlines())
+        self.assertIn("-leading", branches.splitlines())
         local_test = run_git("rev-parse", "refs/heads/test", cwd=clone).stdout
         remote_test = run_git(
             "rev-parse", "refs/remotes/origin/test", cwd=clone
@@ -180,7 +187,7 @@ class RipperUtilsTests(unittest.TestCase):
         original_run_git = ripper_utils._run_git
 
         def fail_test_branch(arguments, cwd, **kwargs):
-            if arguments[:3] == ["branch", "--track", "test"]:
+            if arguments[:2] == ["update-ref", "refs/heads/test"]:
                 raise subprocess.CalledProcessError(1, ["git", *arguments])
             return original_run_git(arguments, cwd, **kwargs)
 
@@ -206,6 +213,23 @@ class RipperUtilsTests(unittest.TestCase):
                 zip_output_dir(source)
         self.assertTrue(source.exists())
         self.assertFalse(source.with_name(f"{source.name}.tar.gz").exists())
+
+    def test_archive_uses_umask_default_file_mode(self):
+        source = self.root / "archive-mode"
+        source.mkdir()
+        (source / "data").write_text("archive", encoding="utf-8")
+        previous_umask = os.umask(0o027)
+        try:
+            archive_path = Path(zip_output_dir(source))
+        finally:
+            os.umask(previous_umask)
+        self.assertEqual(0o640, archive_path.stat().st_mode & 0o777)
+
+    def test_destructive_helpers_require_an_explicit_directory(self):
+        with self.assertRaises(TypeError):
+            delete_output_directory()
+        with self.assertRaises(TypeError):
+            zip_output_dir()
 
 
 if __name__ == "__main__":
