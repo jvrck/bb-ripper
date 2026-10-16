@@ -9,20 +9,24 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 
 ## Development commands
 
+The project pins uv 0.12.24. Install that version, or prefix commands with
+`uvx uv@0.12.24` when the default uv differs.
+
 ```bash
-uvx uv@0.12.24 sync --locked
-uvx uv@0.12.24 run --locked python -m unittest discover -v
-uvx uv@0.12.24 run --locked pylint src/bb_ripper bb-ripper scripts
-uvx uv@0.12.24 run --locked pip-audit -r requirements.txt
-uvx uv@0.12.24 build
+uv sync --locked
+uv run --locked python -m unittest discover -v
+uv run --locked pylint src/bb_ripper bb-ripper scripts
+uv run --locked pip-audit -r requirements.txt
+uv build
 ```
 
 For the supported pip fallback, create and activate a Python 3.12 virtual
-environment with `uvx uv@0.12.24 venv --seed --python 3.12 .venv` and `source
-.venv/bin/activate`, run `python -m pip install -r requirements.txt`, and use
-`PYTHONPATH=src python -m unittest discover -v`. After dependency changes,
-regenerate the pip fallback with `BBRIPPER_UV="uvx uv@0.12.24"
-scripts/export_requirements.sh`.
+environment with `python3.12 -m venv .venv` and `source .venv/bin/activate`,
+run `python -m pip install -r requirements.txt`, and use `PYTHONPATH=src python
+-m unittest discover -v`. uv users can instead run `uv venv --seed -p 3.12
+.venv`. After dependency changes, regenerate the pip fallback with
+`BBRIPPER_UV="uvx uv@0.12.24" scripts/export_requirements.sh` if the default uv
+is not the pinned version.
 
 Build both supported image variants with:
 
