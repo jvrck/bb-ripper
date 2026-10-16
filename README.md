@@ -4,11 +4,8 @@ This project downloads all Bitbucket repositories and every branch for each repo
 
 ## Bitbucket Authentication
 
-This application supports two authentication methods:
-
-### API Tokens (Recommended)
-
-**Required after June 9, 2026** when app passwords are deprecated.
+This application uses Bitbucket API tokens. App passwords are no longer
+supported.
 
 API tokens provide:
 - Expiration control
@@ -17,33 +14,14 @@ API tokens provide:
 
 [Create an API token](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/)
 
-### App Passwords (Legacy - Deprecated)
-
-⚠️ **App passwords will stop working on June 9, 2026**
-
-Existing app passwords will continue to work until that date, but no new app passwords can be created as of September 9, 2025.
-
-[More about app password deprecation](https://www.atlassian.com/blog/bitbucket/bitbucket-cloud-transitions-to-api-tokens-enhancing-security-with-app-password-deprecation)
-
 ## Environment Settings
 
-The application requires the following environment variables to run.
-
-### For API Token Authentication (Recommended)
+The application validates all of the following environment variables before
+creating a backup:
 
 `BB_EMAIL` Your Atlassian account email.
 
 `BB_API_TOKEN` Your Bitbucket API token.
-
-`BB_WORKSPACE` The name of the Bitbucket workspace.
-
-`BB_RIPPER_EXPORT_DIRECTORY` The path of the output.
-
-### For App Password Authentication (Legacy)
-
-`BB_USER` The username component of the Bitbucket App Password.
-
-`BB_PASSWORD` The password component of the Bitbucket App Password.
 
 `BB_WORKSPACE` The name of the Bitbucket workspace.
 
@@ -57,7 +35,7 @@ The application requires the following environment variables to run.
 
 ### Local Environment
 
-The application was developed and tested on MacOS with the [Python 3.11 package](https://formulae.brew.sh/formula/python@3.11) managed with [Homebrew](https://brew.sh/).
+The application supports Python 3.12.
 
 To install Python dependencies
 
@@ -67,7 +45,9 @@ pip install -r requirements.txt
 
 ### Set the environment variables
 
-To set the environment variables: Rename `env_setup.sh.example` to `env_setup.sh` after adding values for your environment, then source the environment variables to add them to your session.
+Rename `env_setup.sh.example` to `env_setup.sh`, add the required values, and
+source it. Existing installations must replace `BB_USER` and `BB_PASSWORD`
+with `BB_EMAIL` and `BB_API_TOKEN` before upgrading.
 
 ```bash
 source env_setup.sh
@@ -84,13 +64,15 @@ python3 .
 
 ### Running the docker image
 
-To run the docker image: Create a Docker environment file with the variables required, named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
+To run the Docker image, create a `dockenv` file containing the required API
+token settings. Create a `data` directory for the resulting archive and mount
+it at `/data`.
 
-The repository contains a file named `docenv.example` that is a template for the `docenv` file.
+Copy `docenv.example` to `dockenv` and replace its placeholder values.
 
 ```bash
 docker pull jvrck/bbripper
-docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  jvrck/bbripper:latest
+docker run --env-file dockenv -v "$(pwd)/data:/data" --rm -it jvrck/bbripper:latest
 ```
 
 ### Building and running the docker image
@@ -101,10 +83,10 @@ To build the docker image
 docker build --no-cache -t ripper .
 ```
 
-To run the image, create a docker environment file with the variables required named `docenv`. Create a directory named `data` to store the repositories. This directory will be mounted to the `/data` volume in the container.
+To run the locally built image, use the same `dockenv` file and `/data` mount.
 
 ```bash
- docker run --env-file dockenv -v $(pwd)/data:/data  --rm -it  ripper:latest
+docker run --env-file dockenv -v "$(pwd)/data:/data" --rm -it ripper:latest
 ```
 
 ## Docker image with AWS CLI

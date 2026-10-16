@@ -1,105 +1,66 @@
-"""
-Module that provides authentication helper functions for Bitbucket.
+"""Authentication and configuration helpers for Bitbucket API tokens."""
 
-Supports both app passwords (legacy) and API tokens.
-Detection is based on environment variables:
-- If BB_API_TOKEN is set: use API token mode
-- Otherwise: use app password mode (requires BB_USER + BB_PASSWORD)
-"""
 import os
-import re
+from urllib.parse import urlsplit, urlunsplit
+
+GIT_USERNAME = "x-bitbucket-api-token-auth"
+BITBUCKET_GIT_SCHEME = "https"
+BITBUCKET_GIT_HOST = "bitbucket.org"
+BITBUCKET_GIT_PORT = None
+REQUIRED_ENVIRONMENT = (
+    "BB_EMAIL",
+    "BB_API_TOKEN",
+    "BB_WORKSPACE",
+    "BB_RIPPER_EXPORT_DIRECTORY",
+)
 
 
-def get_auth_mode():
-    """
-    Determine which authentication mode to use based on environment variables.
-    
-    Returns:
-        str: 'api_token' or 'app_password'
-    """
-    if 'BB_API_TOKEN' in os.environ:
-        return 'api_token'
-    return 'app_password'
-
-
-def get_api_auth():
-    """
-    Get authentication credentials for REST API calls.
-
-    Returns:
-        tuple: (username, password/token) for use with requests.auth
-
-    For API token mode: returns (email, token)
-    For app password mode: returns (username, password)
-    """
-    mode = get_auth_mode()
-
-    if mode == 'api_token':
-        # API tokens require email for REST API calls
-        email = os.environ.get('BB_EMAIL')
-        token = os.environ.get('BB_API_TOKEN')
-
-        if not email:
-            raise ValueError("BB_EMAIL is required when using BB_API_TOKEN")
-        if not token:
-            raise ValueError("BB_API_TOKEN is set but empty")
-
-        return (email, token)
-
-    # App password mode
-    user = os.environ.get('BB_USER')
-    password = os.environ.get('BB_PASSWORD')
-
-    if not user:
-        raise ValueError("BB_USER is required when not using BB_API_TOKEN")
-    if not password:
+def validate_environment(environment=None):
+    """Validate all required settings before a backup starts."""
+    values = os.environ if environment is None else environment
+    missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name, "").strip()]
+    if missing:
         raise ValueError(
-            "BB_PASSWORD is required when not using BB_API_TOKEN")
+            "Missing required environment variables: " + ", ".join(missing)
+        )
 
-    return (user, password)
+    multiline = [
+        name for name in REQUIRED_ENVIRONMENT
+        if "\n" in values[name] or "\r" in values[name]
+    ]
+    if multiline:
+        raise ValueError(
+            "Environment variables must be single-line values: "
+            + ", ".join(multiline)
+        )
+
+    workspace = values["BB_WORKSPACE"]
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+    if workspace in {".", ".."} or any(char not in allowed for char in workspace):
+        raise ValueError("BB_WORKSPACE must be a valid Bitbucket workspace slug")
+
+
+def get_api_auth(environment=None):
+    """Return the email and API token used for Bitbucket REST requests."""
+    values = os.environ if environment is None else environment
+    validate_environment(values)
+    return values["BB_EMAIL"], values["BB_API_TOKEN"]
 
 
 def get_git_https_url(base_url):
-    """
-    Transform a Bitbucket HTTPS URL to include authentication credentials.
+    """Return a clean, credential-free Bitbucket HTTPS clone URL."""
+    parsed = urlsplit(base_url)
+    if (
+            parsed.scheme != BITBUCKET_GIT_SCHEME
+            or parsed.hostname != BITBUCKET_GIT_HOST
+            or parsed.port != BITBUCKET_GIT_PORT
+            or not parsed.path
+    ):
+        raise ValueError("Bitbucket clone URL must use the expected HTTPS host")
+    if parsed.query or parsed.fragment:
+        raise ValueError("Bitbucket clone URL must not include query or fragment data")
 
-    Args:
-        base_url (str): The base HTTPS URL from Bitbucket
-                        (e.g., https://bitbucket.org/workspace/repo.git
-                        or https://username@bitbucket.org/workspace/repo.git)
-
-    Returns:
-        str: The URL with embedded credentials
-
-    For API token mode: https://x-bitbucket-api-token-auth:{token}@...
-    For app password mode: https://{username}:{password}@bitbucket.org/...
-    """
-    mode = get_auth_mode()
-
-    # First, remove any existing username from the URL to normalize it
-    # Bitbucket URLs may come in format: https://username@bitbucket.org/...
-    # We need to strip the username part first
-    clean_url = re.sub(r'https://[^@]+@', 'https://', base_url)
-
-    if mode == 'api_token':
-        # API tokens use static username for git operations
-        token = os.environ.get('BB_API_TOKEN')
-
-        if not token:
-            raise ValueError("BB_API_TOKEN is set but empty")
-
-        # Replace https:// with https://x-bitbucket-api-token-auth:{token}@
-        return clean_url.replace(
-            'https://', f'https://x-bitbucket-api-token-auth:{token}@')
-
-    # App password mode
-    user = os.environ.get('BB_USER')
-    password = os.environ.get('BB_PASSWORD')
-
-    if not user:
-        raise ValueError("BB_USER is required when not using BB_API_TOKEN")
-    if not password:
-        raise ValueError("BB_PASSWORD is required when not using BB_API_TOKEN")
-
-    # Replace https:// with https://{user}:{password}@
-    return clean_url.replace('https://', f'https://{user}:{password}@')
+    netloc = parsed.hostname
+    if parsed.port is not None:
+        netloc = f"{netloc}:{parsed.port}"
+    return urlunsplit((parsed.scheme, netloc, parsed.path, "", ""))

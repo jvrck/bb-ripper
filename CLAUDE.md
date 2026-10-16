@@ -1,83 +1,52 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working in this repository.
 
-## Project Overview
-BBRipper is a Python-based Bitbucket repository backup tool that downloads all repositories and branches from a Bitbucket workspace and archives them as tar.gz files.
+## Project overview
 
-## Development Commands
+BBRipper is a Python 3.12 application that downloads every repository and
+branch in a Bitbucket workspace, then creates a compressed tar archive.
 
-### Environment Setup
+## Development commands
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment variables
-source env_setup.sh  # After copying env_setup.sh.example and adding values
+python -m pip install -r requirements.txt
+python -m unittest discover -v
+pylint bb-ripper scripts
 ```
 
-### Running the Application
+Build both supported image variants with:
+
 ```bash
-cd bb-ripper
-python3 .
+docker build -t bbripper:local .
+docker build -t bbripper:local-aws --build-arg AWSCLI=TRUE .
 ```
 
-### Linting
-```bash
-# Install and run pylint
-pip install pylint
-pylint ./bb-ripper/
-```
+## Runtime configuration
 
-### Docker Commands
-```bash
-# Build docker image
-docker build --no-cache -t ripper .
+All four values are required and validated before backup work starts:
 
-# Build with AWS CLI support
-docker build --no-cache -t bbripper-aws --build-arg AWSCLI=TRUE .
+- `BB_EMAIL`: Atlassian account email used by REST authentication.
+- `BB_API_TOKEN`: Bitbucket API token used by REST and Git authentication.
+- `BB_WORKSPACE`: Bitbucket workspace slug.
+- `BB_RIPPER_EXPORT_DIRECTORY`: destination for the completed archive.
 
-# Run docker container
-docker run --env-file dockenv -v $(pwd)/data:/data --rm -it ripper:latest
-```
+`BB_TEST_COUNTER` optionally limits the number of repositories. `LOGLEVEL`
+controls API logging. App-password variables are intentionally unsupported.
 
-## Architecture
+## Architecture and safety invariants
 
-### Core Components
-
-1. **bb-ripper/__main__.py**: Main entry point that orchestrates the backup process
-   - Validates git installation
-   - Creates output directory
-   - Iterates through workspace repositories
-   - Handles test mode with BB_TEST_COUNTER
-   - Manages archiving and cleanup
-
-2. **bb-ripper/bbhelper.py**: Bitbucket API integration
-   - `BBProject`: Represents Bitbucket projects
-   - `BBRepo`: Represents Bitbucket repositories with clone URLs
-   - Static methods for fetching workspace repositories via REST API
-   - Handles pagination of API responses
-
-3. **bb-ripper/ripper_utils.py**: Utility functions for repository operations
-   - `create_output_directory()`: Creates timestamped output directories
-   - `clone_repo()`: Clones repositories and all branches
-   - `zip_output_dir()`: Creates tar.gz archives
-   - `check_git()`: Validates git installation
-   - `get_https_url()`: Builds authenticated HTTPS URLs
-
-### Environment Variables
-Required:
-- `BB_USER`: Bitbucket username
-- `BB_PASSWORD`: Bitbucket app password
-- `BB_WORKSPACE`: Target workspace name
-- `BB_RIPPER_EXPORT_DIRECTORY`: Output directory path
-
-Optional:
-- `BB_TEST_COUNTER`: Limit repositories for testing (integer > 0)
-- `LOGLEVEL`: Logging level (default: INFO)
-
-### Key Design Patterns
-- Global variables (`output_dir`, `output_base`) track output locations across modules
-- Git operations use subprocess and os.system calls
-- HTTPS authentication embedded in clone URLs
-- Automatic branch discovery and checkout during cloning
+- `bb-ripper/__main__.py` validates configuration, orchestrates the backup,
+  and deletes temporary source only after an archive is created and verified.
+- `bb-ripper/bbhelper.py` performs bounded REST requests with status, shape,
+  timeout, and same-origin pagination checks.
+- `bb-ripper/ripper_utils.py` clones without shell interpolation. A
+  process-local Git credential helper exposes the API token only to the clone
+  process; persisted origins and archives must remain credential-free.
+- Git, branch, API, and archive failures are terminal. Never turn these into a
+  successful or partial backup result.
+- Tests use disposable local Git and HTTP fixtures. Do not use real Bitbucket
+  credentials, production backups, or existing archives as fixtures.
+- `scripts/image_metadata.py` is the tested source of image tags. Branch and
+  scheduled builds may update only `latest`; a version tag may be published
+  only for the matching Git tag event.

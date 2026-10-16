@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2026-10-16
+
+### Security
+
+- Removed app-password authentication. Set `BB_EMAIL` and `BB_API_TOKEN` before
+  upgrading; `BB_USER` and `BB_PASSWORD` are no longer accepted.
+- Git credentials are supplied only to the clone process and are no longer
+  embedded in persisted remotes or backup archives.
+- API, Git, and archive failures now stop the backup and preserve recoverable
+  source data instead of reporting success.
+
+### Changed
+
+- Added bounded and validated API pagination, secret-free regression tests,
+  patched dependency versions, and deterministic container publishing tags.
+
 ## [1.2.7] - 2026-03-05
 
 ### Added
