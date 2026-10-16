@@ -9,8 +9,8 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 
 ## Development commands
 
-The project pins uv 0.12.24. Install that version, or prefix commands with
-`uvx uv@0.12.24` when the default uv differs.
+The project pins uv 0.12.24. Install that version, or replace `uv` with
+`uvx uv@0.12.24` in these commands when the default uv differs.
 
 ```bash
 uv sync --locked
@@ -20,13 +20,18 @@ uv run --locked pip-audit -r requirements.txt
 uv build
 ```
 
-For the supported pip fallback, create and activate a Python 3.12 virtual
-environment with `python3.12 -m venv .venv` and `source .venv/bin/activate`,
-run `python -m pip install -r requirements.txt`, and use `PYTHONPATH=src python
--m unittest discover -v`. uv users can instead run `uv venv --seed -p 3.12
-.venv`. After dependency changes, regenerate the pip fallback with
-`BBRIPPER_UV="uvx uv@0.12.24" scripts/export_requirements.sh` if the default uv
-is not the pinned version.
+For the supported pip fallback (no uv required):
+
+```bash
+python3.12 -m venv .venv  # or: uv venv --seed -p 3.12 .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+PYTHONPATH=src python -m unittest discover -v
+```
+
+After dependency changes, regenerate the pip fallback with
+`scripts/export_requirements.sh` (prefix `BBRIPPER_UV="uvx uv@0.12.24"` when
+the default uv is not the pinned version).
 
 Build both supported image variants with:
 
