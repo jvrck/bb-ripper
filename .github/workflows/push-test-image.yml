@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-and-smoke-test:
-    name: Build and smoke test (${{ matrix.variant }})
+    name: Build and smoke test (${{ matrix.variant }}, ${{ matrix.platform }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,19 +24,35 @@ jobs:
           - variant: standard
             awscli: "FALSE"
             image: ghcr.io/jvrck/bbripper:ci-standard
+            platform: linux/amd64
+            architecture: x86_64
+          - variant: standard
+            awscli: "FALSE"
+            image: ghcr.io/jvrck/bbripper:ci-standard
+            platform: linux/arm64
+            architecture: aarch64
           - variant: aws
             awscli: "TRUE"
             image: ghcr.io/jvrck/bbripper:ci-aws
+            platform: linux/amd64
+            architecture: x86_64
+          - variant: aws
+            awscli: "TRUE"
+            image: ghcr.io/jvrck/bbripper:ci-aws
+            platform: linux/arm64
+            architecture: aarch64
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build image without publishing
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           file: ./Dockerfile
           build-args: AWSCLI=${{ matrix.awscli }}
           load: true
@@ -45,14 +61,28 @@ jobs:
       - name: Verify fail-closed configuration validation
         env:
           IMAGE: ${{ matrix.image }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          if docker run --rm "$IMAGE" >container-output.txt 2>&1; then
+          if docker run --rm --platform "$PLATFORM" "$IMAGE" >container-output.txt 2>&1; then
             echo "Container unexpectedly succeeded without required settings"
             exit 1
           fi
           grep -q "Missing required environment variables" container-output.txt
+      - name: Verify runtime tools and imports
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+          IMAGE: ${{ matrix.image }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          python_version="$(docker run --rm --platform "$PLATFORM" "$IMAGE" python3 --version 2>&1)"
+          echo "$python_version"
+          grep -q '^Python 3\.12\.' <<< "$python_version"
+          docker run --rm --platform "$PLATFORM" "$IMAGE" git --version
+          docker run --rm --platform "$PLATFORM" "$IMAGE" python3 -c "import requests, auth_helper, bbhelper, ripper_utils"
+          test "$(docker run --rm --platform "$PLATFORM" "$IMAGE" uname -m)" = "$EXPECTED_ARCHITECTURE"
       - name: Verify AWS CLI
         if: matrix.variant == 'aws'
         env:
           IMAGE: ${{ matrix.image }}
-        run: docker run --rm "$IMAGE" aws --version
+          PLATFORM: ${{ matrix.platform }}
+        run: docker run --rm --platform "$PLATFORM" "$IMAGE" aws --version

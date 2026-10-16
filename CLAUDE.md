@@ -10,10 +10,16 @@ branch in a Bitbucket workspace, then creates a compressed tar archive.
 ## Development commands
 
 ```bash
-python -m pip install -r requirements.txt
+uv venv -p 3.12 && uv pip install -r requirements.txt
+source .venv/bin/activate
+uv pip install pylint==4.1.3 pip-audit==2.10.1
 python -m unittest discover -v
 pylint bb-ripper scripts
+pip-audit --requirement requirements.txt
 ```
+
+For the supported pip fallback, create and activate a Python 3.12 virtual
+environment, then run `python -m pip install -r requirements.txt`.
 
 Build both supported image variants with:
 
