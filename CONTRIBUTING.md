@@ -1,7 +1,8 @@
 # Contributing
 
-BBRipper uses Python 3.12 and uv 0.12.24. Create the locked development
-environment and run the checks with:
+BBRipper uses Python 3.12 and pins uv 0.12.24. Install that version, or prefix
+commands with `uvx uv@0.12.24` when your default uv differs. Create the locked
+development environment and run the checks with:
 
 ```bash
 uv sync --locked
@@ -22,8 +23,8 @@ scripts/export_requirements.sh /tmp/requirements.txt
 diff -u requirements.txt /tmp/requirements.txt
 ```
 
-The export script rejects any uv version other than 0.12.24. If the pinned uv
-is not your default executable, run it through uvx:
+The export script rejects any uv version other than 0.12.24. If your default
+uv differs, set its pinned command when invoking the script:
 
 ```bash
 BBRIPPER_UV="uvx uv@0.12.24" scripts/export_requirements.sh
@@ -32,13 +33,19 @@ BBRIPPER_UV="uvx uv@0.12.24" scripts/export_requirements.sh
 Dependabot manages the uv project and updates `uv.lock`; its pull requests must
 also regenerate `requirements.txt`. CI rejects export drift.
 
-For pip compatibility checks, create a clean Python 3.12 virtual environment,
-install `requirements.txt`, and run:
+For pip compatibility checks, create and activate a clean Python 3.12 virtual
+environment with any CPython 3.12 interpreter, install `requirements.txt`, and
+run:
 
 ```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 PYTHONPATH=src python -m unittest discover -v
 python3 bb-ripper/
 ```
+
+uv users can instead run `uv venv --seed -p 3.12 .venv`.
 
 The last command is expected to fail closed with exit status 1 when the
 required runtime environment variables are absent.

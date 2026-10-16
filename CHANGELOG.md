@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Remove devcontainer support and its local development configuration.
+
 ### Added
 
 - Add a packaged `bb_ripper` application with console, module, and compatible
