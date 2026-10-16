@@ -59,10 +59,19 @@ project when the same run contains repositories needing the fallback folder.
 
 The application supports Python 3.12.
 
-To install Python dependencies
+Create a Python 3.12 virtual environment and install dependencies with uv:
 
 ```bash
-pip install -r requirements.txt
+uv venv -p 3.12 && uv pip install -r requirements.txt
+source .venv/bin/activate
+```
+
+Alternatively, use pip in a Python 3.12 virtual environment:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
 ### Set the environment variables

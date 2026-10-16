@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Repository directories now use Bitbucket repository slugs instead of display
   names, changing on-disk and archive paths when those values differ.
+- Pin uv for dependency installation in CI and container builds while retaining
+  requirements.txt and pip compatibility.
 
 ### Fixed
 
