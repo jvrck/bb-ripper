@@ -101,6 +101,9 @@ class BBRepo:
 
     def __init__(self, data):
         self.name = data["name"]
+        self.slug = data["slug"]
+        if not isinstance(self.slug, str):
+            raise TypeError("repository slug must be a string")
         self.project = data["project"]
         clone_links = data["links"]["clone"]
         if not isinstance(clone_links, list):

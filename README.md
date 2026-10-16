@@ -2,6 +2,10 @@
 
 This project downloads all Bitbucket repositories and every branch for each repository. The resulting downloads are compressed with `tar`.
 
+Each repository is stored in a directory named after its Bitbucket repository
+slug. This differs from versions through 1.2.8, which used the display name, so
+on-disk and archive paths change when a repository's name and slug differ.
+
 ## Bitbucket Authentication
 
 This application uses Bitbucket API tokens. App passwords are no longer

@@ -11,6 +11,7 @@ from ripper_utils import check_git
 from ripper_utils import clone_repo
 from ripper_utils import create_output_directory
 from ripper_utils import delete_output_directory
+from ripper_utils import plan_repo_destinations
 from ripper_utils import zip_output_dir
 
 
@@ -30,12 +31,13 @@ def run_backup():
 
     output_directory = create_output_directory()
     workspace_repos = BBRepo.GetWorkspaceRepos(os.environ["BB_WORKSPACE"])
+    if limit is not None:
+        workspace_repos = workspace_repos[:limit]
+    backup_plan = plan_repo_destinations(workspace_repos, output_directory)
 
-    for counter, repo in enumerate(workspace_repos, start=1):
-        print(f"Backing up repository: {repo.name}")
-        clone_repo(repo, output_directory)
-        if limit is not None and counter == limit:
-            break
+    for repo, repository_path in backup_plan:
+        print(f"Backing up repository: {repo.name} ({repo.slug})")
+        clone_repo(repo, output_directory, repository_path)
 
     archive_path = zip_output_dir(output_directory)
     delete_output_directory(output_directory)

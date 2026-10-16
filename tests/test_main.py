@@ -3,8 +3,10 @@
 import importlib.util
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +50,55 @@ class MainTests(unittest.TestCase):
             archive = MAIN.run_backup()
         self.assertEqual("/tmp/source.tar.gz", archive)
         delete.assert_called_once_with("/tmp/source")
+
+    def test_planning_failure_stops_before_clone_archive_or_cleanup(self):
+        repos = [
+            SimpleNamespace(name="One", slug="duplicate"),
+            SimpleNamespace(name="Two", slug="DUPLICATE"),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source"
+            source.mkdir()
+            with patch.dict(os.environ, ENVIRONMENT, clear=True), \
+                    patch.object(MAIN, "check_git", return_value="/usr/bin/git"), \
+                    patch.object(
+                        MAIN, "create_output_directory", return_value=str(source)
+                    ), \
+                    patch.object(
+                        MAIN.BBRepo, "GetWorkspaceRepos", return_value=repos
+                    ), \
+                    patch.object(MAIN, "clone_repo") as clone, \
+                    patch.object(MAIN, "zip_output_dir") as archive, \
+                    patch.object(MAIN, "delete_output_directory") as delete:
+                with self.assertRaisesRegex(
+                        MAIN.BackupError, "duplicate destinations"):
+                    MAIN.run_backup()
+
+            self.assertTrue(source.is_dir())
+            clone.assert_not_called()
+            archive.assert_not_called()
+            delete.assert_not_called()
+
+    def test_repository_limit_is_applied_before_destination_planning(self):
+        first = SimpleNamespace(name="First", slug="duplicate")
+        repos = [first, SimpleNamespace(name="Second", slug="DUPLICATE")]
+        environment = {**ENVIRONMENT, "BB_TEST_COUNTER": "1"}
+        with patch.dict(os.environ, environment, clear=True), \
+                patch.object(MAIN, "check_git", return_value="/usr/bin/git"), \
+                patch.object(
+                    MAIN, "create_output_directory", return_value="/tmp/source"
+                ), \
+                patch.object(
+                    MAIN.BBRepo, "GetWorkspaceRepos", return_value=repos
+                ), \
+                patch.object(MAIN, "clone_repo") as clone, \
+                patch.object(
+                    MAIN, "zip_output_dir", return_value="/tmp/source.tar.gz"
+                ), \
+                patch.object(MAIN, "delete_output_directory"):
+            self.assertEqual("/tmp/source.tar.gz", MAIN.run_backup())
+
+        clone.assert_called_once_with(first, "/tmp/source", Path("duplicate"))
 
     def test_main_returns_nonzero_without_claiming_success(self):
         with patch.object(MAIN, "run_backup", side_effect=RuntimeError("failed")):

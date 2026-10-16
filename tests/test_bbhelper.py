@@ -17,11 +17,12 @@ ENVIRONMENT = {
     "BB_WORKSPACE": "workspace",
     "BB_RIPPER_EXPORT_DIRECTORY": "/tmp/export",
 }
+MISSING = object()
 
 
-def repo_payload(name):
+def repo_payload(name, slug=MISSING):
     """Build the minimum valid Bitbucket repository response."""
-    return {
+    payload = {
         "name": name,
         "project": {"key": "TEST"},
         "links": {
@@ -31,6 +32,11 @@ def repo_payload(name):
             ]
         },
     }
+    if slug is MISSING:
+        payload["slug"] = name
+    elif slug is not None:
+        payload["slug"] = slug
+    return payload
 
 
 class FakeResponse:
@@ -89,6 +95,28 @@ class BBHelperTests(unittest.TestCase):
         self.assertEqual(
             ("backup@example.test", "synthetic-token"), session.auth
         )
+
+    def test_repository_maps_display_name_and_slug_separately(self):
+        session = FakeSession([
+            FakeResponse({"values": [repo_payload("Tools/API", "tools-api")]})
+        ])
+        with patch("bbhelper.requests.Session", return_value=session):
+            repos = BBRepo.GetWorkspaceRepos("workspace")
+
+        self.assertEqual("Tools/API", repos[0].name)
+        self.assertEqual("tools-api", repos[0].slug)
+
+    def test_missing_or_non_string_slug_is_rejected(self):
+        invalid_payloads = (
+            repo_payload("missing", None),
+            repo_payload("number", 123),
+        )
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                session = FakeSession([FakeResponse({"values": [payload]})])
+                with patch("bbhelper.requests.Session", return_value=session):
+                    with self.assertRaisesRegex(BitbucketAPIError, "invalid item"):
+                        BBRepo.GetWorkspaceRepos("workspace")
 
     def test_http_failure_is_closed(self):
         session = FakeSession([
