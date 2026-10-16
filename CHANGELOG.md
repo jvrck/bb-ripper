@@ -5,11 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-10-16
 
-### Removed
+### Upgrading from 1.2.8
 
-- Remove devcontainer support and its local development configuration.
+- **Archive layout:** repository directories are named after the Bitbucket
+  repository slug rather than the display name. Paths inside new archives change
+  for any repository whose name differs from its slug (for example `Tools/API`
+  is stored as `tools-api`). Restore and comparison tooling that expects
+  display-name directories must be updated.
+- **Project folders (opt-in):** set `BB_USE_PROJECT_FOLDERS=true` to store
+  repositories as `<PROJECT_KEY>/<slug>`, with `UNASSIGNED` for repositories
+  without a project. The default remains the flat layout. Values other than
+  `true`/`false` stop the backup before any work starts.
+- **Fail-closed planning:** unsafe slugs or project keys, case-insensitive
+  destination collisions, and ambiguous `UNASSIGNED` grouping stop the backup
+  before cloning; no repository is silently skipped.
+- **Running from source:** the application is now the `bb_ripper` package.
+  Use `uv sync --locked` then `uv run --locked bb-ripper` (or
+  `python -m bb_ripper`). `python3 bb-ripper/` and `cd bb-ripper && python3 .`
+  continue to work with the pip fallback (`pip install -r requirements.txt`).
+- **Containers:** no changes are required. `/ripper`, the default command,
+  `/data`, all environment variables, the AWS variant and `aws` command
+  overrides are unchanged; `bb-ripper` and `python -m bb_ripper` are also
+  available in the image.
+- **Contributors:** `pyproject.toml` and `uv.lock` are authoritative;
+  `requirements.txt` is generated (`scripts/export_requirements.sh`). The
+  devcontainer configuration has been removed.
 
 ### Added
 
@@ -33,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   names, changing on-disk and archive paths when those values differ.
 - Pin uv for dependency installation in CI and container builds while retaining
   requirements.txt and pip compatibility.
+
+### Removed
+
+- Removed the devcontainer configuration (`.devcontainer/devcontainer.json`)
+  and its setup guidance. Production Docker images are unaffected.
 
 ### Fixed
 

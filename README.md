@@ -58,9 +58,10 @@ project when the same run contains repositories needing the fallback folder.
 ### Local Environment
 
 The application supports Python 3.12 and pins
-[uv](https://docs.astral.sh/uv/) 0.12.24. Install that version, or prefix uv
-commands with `uvx uv@0.12.24` if your default uv differs. Create the locked
-development environment with:
+[uv](https://docs.astral.sh/uv/) 0.12.24. Install that version, or, if your
+default uv differs, replace `uv` with `uvx uv@0.12.24` in the commands below
+(for example `uvx uv@0.12.24 sync --locked`). Create the locked development
+environment with:
 
 ```bash
 uv sync --locked
@@ -68,8 +69,9 @@ uv sync --locked
 
 `pyproject.toml` and `uv.lock` are authoritative. `requirements.txt` is a
 generated, hashed runtime-only fallback for environments that do not use uv.
-To use that fallback, create a Python 3.12 virtual environment with any
-CPython 3.12 interpreter, then install the runtime dependencies:
+To use that fallback, create a virtual environment with a CPython 3.12
+interpreter (named `python3.12` below; adjust for your system), then install
+the runtime dependencies:
 
 ```bash
 python3.12 -m venv .venv
@@ -77,7 +79,8 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-uv users can instead run `uv venv --seed -p 3.12 .venv`.
+uv users can create the environment with `uv venv --seed -p 3.12 .venv`
+instead of the first command; activation and the pip install are still required.
 
 ### Set the environment variables
 
